@@ -9,6 +9,8 @@ try:
 except ImportError:
     Llama = None  # type: ignore[assignment,misc]
 
+_COMMIT_EVERY = 10
+
 
 def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
     if Llama is None:
@@ -51,9 +53,11 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
                 "UPDATE symbols SET docstring = ? WHERE id = ?",
                 (doc[:500], row["id"]),
             )
-            conn.commit()
             telemetry.debug("docgen symbol", progress=f"{i}/{total}",
                             symbol=row["qualified_name"] or row["name"])
+
+        if i % _COMMIT_EVERY == 0:
+            conn.commit()
 
     conn.commit()
     conn.close()
