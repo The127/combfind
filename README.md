@@ -7,7 +7,14 @@ combfind builds a local index of a repository so an agent can find the right fil
 ## Install
 
 ```bash
-pip install "combfind[llm]" \
+pip3 install "combfind[llm]" \
+  --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+```
+
+Or with uv:
+
+```bash
+uv pip install "combfind[llm]" \
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 ```
 
