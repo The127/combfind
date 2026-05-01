@@ -40,7 +40,9 @@ def version_cmd():
               help="Paths to exclude relative to repo root (repeatable)")
 @click.option("--exclude-regex", default=None, metavar="PATTERN",
               help="Regex matched against file paths to exclude")
-def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex):
+@click.option("--force", is_flag=True, default=False,
+              help="Re-run all stages, ignoring cache")
+def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, force):
     """Index a repository."""
     from combfind.pipeline import run as pipeline_run
     from combfind.llm import create_backend
@@ -62,6 +64,7 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex):
         backend=backend,
         repo_path=repo_path,
         llm_model=resolved_llm,
+        force=force,
         exclude_paths=list(exclude_paths) or None,
         exclude_regex=exclude_regex,
     )
