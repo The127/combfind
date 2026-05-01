@@ -76,13 +76,14 @@ def print_results(results: list[dict], *, fmt: str = "text") -> None:
         score = r.get("score", 0.0)
         print(f"[{r['rank']}] {concept} ({role}) — {score:.2f}")
 
-        files = r.get("files", [])
-        if files:
-            file_parts = [f"{f['path']}:{f['start_line']}-{f['end_line']}" for f in files]
-            print("    " + "  ".join(file_parts))
-
         if r.get("why_relevant"):
             print(f"    why: {r['why_relevant']}")
+
+        for f in r.get("files", []):
+            print(f"    {f['path']}")
+            for sym in f.get("symbols", []):
+                name = sym["qualified_name"] or sym["name"]
+                print(f"      {name}  :{sym['start_line']}-{sym['end_line']}")
 
         for sib in r.get("sibling_implementations", []):
             print(f"    sibling: {sib['name']} ({sib['file']})")
@@ -109,10 +110,13 @@ def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
     for m in members:
         p = m["path"]
         if p not in files_by_path:
-            files_by_path[p] = {"path": p, "start_line": m["start_line"], "end_line": m["end_line"]}
-        else:
-            files_by_path[p]["start_line"] = min(files_by_path[p]["start_line"], m["start_line"])
-            files_by_path[p]["end_line"] = max(files_by_path[p]["end_line"], m["end_line"])
+            files_by_path[p] = {"path": p, "symbols": []}
+        files_by_path[p]["symbols"].append({
+            "name": m["qualified_name"].split(".")[-1] if m["qualified_name"] else "",
+            "qualified_name": m["qualified_name"] or "",
+            "start_line": m["start_line"],
+            "end_line": m["end_line"],
+        })
 
     symbol_ids = [m["id"] for m in members]
     siblings: list[dict] = []
@@ -138,7 +142,6 @@ def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
         "role": meta["role"],
         "score": round(score, 4),
         "files": list(files_by_path.values()),
-        "symbols": [m["qualified_name"] for m in members if m["qualified_name"]],
         "why_relevant": meta["description"] or "",
         "sibling_implementations": siblings,
     }

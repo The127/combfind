@@ -134,17 +134,27 @@ def test_result_fields(env, mock_model):
     assert r["role"] == "implementation"
     assert 0.0 <= r["score"] <= 1.0
     assert isinstance(r["files"], list)
-    assert isinstance(r["symbols"], list)
     assert isinstance(r["sibling_implementations"], list)
     assert isinstance(r["why_relevant"], str)
 
 
-def test_files_have_line_ranges(env, mock_model):
+def test_files_have_symbols(env, mock_model):
     results = query_mod.query("validate tokens", db_path=env, top_k=1)
     f = results[0]["files"][0]
     assert f["path"] == "auth/service.py"
-    assert f["start_line"] == 10
-    assert f["end_line"] == 80
+    assert isinstance(f["symbols"], list)
+    assert len(f["symbols"]) == 2
+    qnames = [s["qualified_name"] for s in f["symbols"]]
+    assert "auth.service.AuthService" in qnames
+    assert "auth.service.AuthService.validate" in qnames
+
+
+def test_symbol_entries_have_line_ranges(env, mock_model):
+    results = query_mod.query("validate tokens", db_path=env, top_k=1)
+    syms = results[0]["files"][0]["symbols"]
+    auth = next(s for s in syms if s["qualified_name"] == "auth.service.AuthService")
+    assert auth["start_line"] == 10
+    assert auth["end_line"] == 80
 
 
 def test_sibling_found_for_auth_service(env, mock_model):
