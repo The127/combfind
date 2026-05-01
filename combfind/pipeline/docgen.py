@@ -83,15 +83,15 @@ def _read_skeleton(row, repo_path: str | None) -> str | None:
 _EXAMPLES = """\
 function: postgres.mapUser
 func mapUser(u User) postgresUser { ... }
--> Converts a domain User struct to a PostgreSQL-mapped postgresUser for database persistence.
+Converts a domain User struct to a PostgreSQL-mapped postgresUser for database persistence.
 
 method: password.minimumSpecialPolicy.Validate
 func (p minimumSpecialPolicy) Validate(password string) error { ... }
--> Validates that a password contains at least N special characters, returning an error if the requirement is not met.
+Validates that a password contains at least N special characters, returning an error if the requirement is not met.
 
 struct: queries.GetResourceServer
 type GetResourceServer struct { VirtualServerName string; ProjectSlug string; ResourceServerID uuid.UUID }
--> Query object for retrieving a resource server by ID within a specific project and virtual server."""
+Query object for retrieving a resource server by ID within a specific project and virtual server."""
 
 
 def _build_messages(row, skeleton: str) -> list[dict]:
