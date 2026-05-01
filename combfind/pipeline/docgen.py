@@ -86,16 +86,29 @@ def _read_skeleton(row, repo_path: str | None) -> str | None:
         return None
 
 
+_EXAMPLES = """\
+function: postgres.mapUser
+func mapUser(u User) postgresUser { ... }
+-> Converts a domain User struct to a PostgreSQL-mapped postgresUser for database persistence.
+
+method: password.minimumSpecialPolicy.Validate
+func (p minimumSpecialPolicy) Validate(password string) error { ... }
+-> Validates that a password contains at least N special characters, returning an error if the requirement is not met.
+
+struct: queries.GetResourceServer
+type GetResourceServer struct { VirtualServerName string; ProjectSlug string; ResourceServerID uuid.UUID }
+-> Query object for retrieving a resource server by ID within a specific project and virtual server."""
+
+
 def _build_messages(row, skeleton: str) -> list[dict]:
     return [
         {
             "role": "system",
             "content": (
-                "You are writing documentation for code symbols used by AI coding agents. "
-                "Given source code, write a single sentence that explains what this code does "
-                "and when a developer would search for it. "
-                "Be specific: name the technologies, patterns, data types, or domain concepts involved. "
-                "Output only the sentence, nothing else."
+                "Write a doc comment for a code symbol. "
+                "1-3 sentences. Name specific types, patterns, or domain concepts. "
+                "Do not start with the symbol name. Output only the comment text, nothing else.\n\n"
+                f"Examples:\n{_EXAMPLES}"
             ),
         },
         {
