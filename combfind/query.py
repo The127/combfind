@@ -7,6 +7,7 @@ try:
 except ImportError:
     SentenceTransformer = None  # type: ignore[assignment,misc]
 
+from combfind import telemetry
 from combfind.db import get_connection
 
 
@@ -54,8 +55,15 @@ def query(
     top_idx = np.argsort(scores)[::-1][:fetch_k]
     candidates = [(concept_ids[i], float(scores[i])) for i in top_idx]
 
+    telemetry.debug("query embed done", concepts=len(concept_ids), fetch_k=fetch_k)
+    for cid, score in candidates:
+        telemetry.debug("query candidate", score=round(score, 3), concept=concept_meta[cid]["name"])
+
     if rerank and backend is not None:
+        telemetry.debug("query reranking", candidates=len(candidates))
         candidates = _rerank(candidates, concept_meta, text, backend)
+        for cid, score in candidates[:top_k]:
+            telemetry.debug("query reranked", score=round(score, 3), concept=concept_meta[cid]["name"])
 
     results = [
         _expand(conn, concept_id, score, concept_meta[concept_id], rank)
@@ -63,6 +71,7 @@ def query(
     ]
 
     conn.close()
+    telemetry.debug("query done", results=len(results))
     return results
 
 
