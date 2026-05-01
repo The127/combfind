@@ -46,6 +46,27 @@ class OpenAIBackend:
         return response.choices[0].message.content.strip()
 
 
+class MLXBackend:
+    def __init__(self, model_path: str):
+        try:
+            from mlx_lm import load
+        except ImportError:
+            raise ImportError("mlx-lm is required: pip install 'combfind[mlx]'")
+        self._model, self._tokenizer = load(model_path)
+
+    def chat(self, messages: list[dict], max_tokens: int | None = None, schema: str | None = None) -> str:
+        from mlx_lm import generate
+        prompt = self._tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        return generate(
+            self._model, self._tokenizer,
+            prompt=prompt,
+            max_tokens=max_tokens or 512,
+            verbose=False,
+        ).strip()
+
+
 def create_backend(mode: str, **kwargs) -> LLMBackend:
     if mode == "local":
         model = kwargs.get("llm_model")
@@ -58,4 +79,9 @@ def create_backend(mode: str, **kwargs) -> LLMBackend:
             api_key=os.environ.get("COMBFIND_LLM_API_KEY"),
             model=os.environ.get("COMBFIND_LLM_MODEL"),
         )
-    raise ValueError(f"unknown LLM mode {mode!r}; valid: local, openai")
+    if mode == "mlx":
+        model = kwargs.get("llm_model")
+        if not model:
+            raise ValueError("llm_model (HuggingFace repo ID or local path) is required for mlx mode")
+        return MLXBackend(model_path=model)
+    raise ValueError(f"unknown LLM mode {mode!r}; valid: local, openai, mlx")

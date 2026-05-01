@@ -101,7 +101,7 @@ concept siblings (1):
 |------|---------|-------------|
 | `--db` | `<repo_path>/.combfind.db` | Output path |
 | `--llm-model` | auto-detected | Path to a GGUF model file (local mode only) |
-| `--llm-mode` | `local` | LLM backend: `local` (llama.cpp) or `openai` (OpenAI-compatible API) |
+| `--llm-mode` | `local` | LLM backend: `local` (llama.cpp), `openai` (OpenAI-compatible API), or `mlx` (Apple Silicon) |
 | `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
 | `--llm-workers` | `1` | Parallel LLM calls (useful with `--llm-mode openai`) |

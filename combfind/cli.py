@@ -34,8 +34,8 @@ def version_cmd():
 @click.option("--db", default=None, help="Database path (default: <repo_path>/.combfind.db)")
 @click.option("--llm-model", default=None, help="Path to GGUF model file (auto-detected if omitted)")
 @click.option("--llm-mode", default="local", show_default=True,
-              type=click.Choice(["local", "openai"]),
-              help="LLM backend: local (llama.cpp) or openai (OpenAI-compatible API via env vars)")
+              type=click.Choice(["local", "openai", "mlx"]),
+              help="LLM backend: local (llama.cpp), openai (OpenAI-compatible API), or mlx (Apple Silicon)")
 @click.option("--exclude-paths", multiple=True, metavar="PATH",
               help="Paths to exclude relative to repo root (repeatable)")
 @click.option("--exclude-regex", default=None, metavar="PATTERN",
@@ -60,6 +60,8 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
 
     if llm_mode == "local" and resolved_llm is None:
         raise click.ClickException("no model found; run combfind download-model or pass --llm-model")
+    if llm_mode == "mlx" and resolved_llm is None:
+        raise click.ClickException("--llm-model is required for mlx mode (HuggingFace repo ID or local path)")
 
     backend = create_backend(llm_mode, llm_model=resolved_llm)
 
@@ -88,7 +90,7 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
               help="Run iterative agentic query loop (requires --llm-mode)")
 @click.option("--agentic-limit", default=3, show_default=True, type=int,
               help="Max iterations for --agentic mode")
-@click.option("--llm-mode", default=None, type=click.Choice(["local", "openai"]),
+@click.option("--llm-mode", default=None, type=click.Choice(["local", "openai", "mlx"]),
               help="LLM backend for reranking or agentic mode")
 def query_cmd(text, db, top_k, fmt, rerank, agentic, agentic_limit, llm_mode):
     """Query the index with free text."""
