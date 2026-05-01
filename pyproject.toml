@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "combfind"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "hdbscan>=0.8",
+    "llama-cpp-python>=0.2",
+    "numpy>=1.26",
+    "sentence-transformers>=3.0",
+    "sqlite-vec>=0.1",
+    "tree-sitter>=0.22",
+    "tree-sitter-python>=0.23",
+]
+
+[project.optional-dependencies]
+scip = ["protobuf>=5.0"]
+output = ["rich>=13.0", "tqdm>=4.66"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[project.scripts]
+combfind = "combfind.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["combfind*"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
