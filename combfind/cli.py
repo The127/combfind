@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import click
@@ -21,25 +22,16 @@ def cli():
     """combfind — queryable concept map of a codebase."""
 
 
-@cli.command()
-@click.argument("repo_path")
-@click.option("--db", default=None, help="Output db path (default: <repo_path>/.combfind.db)")
-@click.option("--stages", default=None, help="Comma-separated stage names")
-@click.option("--force", is_flag=True, help="Clear pipeline_runs and re-run all stages")
-@click.option("--embed-model", default="all-MiniLM-L6-v2", show_default=True)
-@click.option("--llm-model", default=None, help="Path to GGUF file (required for stage 5 and --rerank)")
-@click.option("--llm-ctx", default=None, type=int)
-@click.option("--cluster-min-size", default=None, type=int)
-@click.option("--noise", default="singleton", show_default=True,
-              type=click.Choice(["singleton", "merge", "drop"]))
+@cli.command("init")
+@click.argument("repo_path", default=".", required=False)
+@click.option("--db", default=None, help="Database path (default: <repo_path>/.combfind.db)")
+@click.option("--llm-model", default=None, help="Path to GGUF model file (auto-detected if omitted)")
 @click.option("--exclude-paths", multiple=True, metavar="PATH",
-              help="Paths to exclude relative to repo root (repeatable, e.g. --exclude-paths tests)")
+              help="Paths to exclude relative to repo root (repeatable)")
 @click.option("--exclude-regex", default=None, metavar="PATTERN",
-              help="Regex matched against relative file paths to exclude (e.g. '.*_generated\\.py')")
-def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster_min_size,
-          noise, exclude_paths, exclude_regex):
-    """Build a combfind map for a repository."""
-    import os
+              help="Regex matched against file paths to exclude")
+def init_cmd(repo_path, db, llm_model, exclude_paths, exclude_regex):
+    """Index a repository."""
     from combfind.pipeline import run as pipeline_run
 
     db_path = db or os.path.join(repo_path, ".combfind.db")
@@ -47,21 +39,14 @@ def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster
     create_schema(conn)
     conn.close()
 
-    stage_list = stages.split(",") if stages else None
     resolved_llm = llm_model or _default_llm_model()
     if resolved_llm and resolved_llm != llm_model:
-        click.echo(f"[combfind] using cached model: {resolved_llm}")
+        click.echo(f"[combfind] using model: {Path(resolved_llm).name}")
 
     pipeline_run.run(
         db_path,
         repo_path=repo_path,
-        stages=stage_list,
-        force=force,
-        embed_model=embed_model,
         llm_model=resolved_llm,
-        llm_ctx=llm_ctx,
-        cluster_min_size=cluster_min_size,
-        noise=noise,
         exclude_paths=list(exclude_paths) or None,
         exclude_regex=exclude_regex,
     )
@@ -69,90 +54,20 @@ def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster
 
 @cli.command("query")
 @click.argument("text")
-@click.option("--db", required=True)
+@click.option("--db", default=".combfind.db", show_default=True)
 @click.option("--top-k", default=5, show_default=True)
-@click.option("--rerank", is_flag=True)
-@click.option("--llm-model", default=None)
 @click.option("--format", "fmt", default="text", show_default=True,
               type=click.Choice(["text", "json"]))
-def query_cmd(text, db, top_k, rerank, llm_model, fmt):
-    """Query a combfind map with free text."""
+def query_cmd(text, db, top_k, fmt):
+    """Query the index with free text."""
     from combfind import query as query_mod
-    results = query_mod.query(text, db_path=db, top_k=top_k, rerank=rerank, llm_model=llm_model)
+    results = query_mod.query(text, db_path=db, top_k=top_k)
     query_mod.print_results(results, fmt=fmt)
 
 
-@cli.command("stage")
-@click.argument("stage_name")
-@click.argument("db_path")
-@click.argument("extra", nargs=-1, metavar="KEY=VALUE")
-def stage_cmd(stage_name, db_path, extra):
-    """Run a single pipeline stage against an existing db."""
-    from combfind.pipeline import run as pipeline_run
-
-    params = {}
-    for kv in extra:
-        k, _, v = kv.partition("=")
-        for cast in (int, float):
-            try:
-                v = cast(v)
-                break
-            except ValueError:
-                pass
-        params[k.replace("-", "_")] = v
-
-    pipeline_run.run_stage(stage_name, db_path, **params)
-
-
-@cli.command("eval")
-@click.option("--db", required=True)
-@click.option("--tickets", required=True, help="Directory of fixture subdirs")
-@click.option("--k", "k_values", default="3,5", show_default=True)
-def eval_cmd(db, tickets, k_values):
-    """Run eval fixtures and report recall@k."""
-    from combfind.eval import harness
-
-    ks = [int(k) for k in k_values.split(",")]
-    harness.run(db_path=db, fixtures_dir=tickets, ks=ks)
-
-
-@cli.command("info")
-@click.argument("db_path")
-def info(db_path):
-    """Print pipeline stage statuses, counts, and build config."""
-    import os
-
-    conn = get_connection(db_path)
-
-    click.echo(f"db: {db_path}  ({os.path.getsize(db_path) // 1024} KB)")
-    click.echo("")
-
-    rows = conn.execute(
-        "SELECT stage, status, completed_at FROM pipeline_runs ORDER BY stage"
-    ).fetchall()
-    if rows:
-        click.echo("Pipeline stages:")
-        for r in rows:
-            click.echo(f"  {r['stage']:<20} {r['status']}")
-        click.echo("")
-
-    for table in ("files", "symbols", "concepts"):
-        n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        click.echo(f"  {table}: {n}")
-
-    cfg = conn.execute("SELECT key, value FROM build_config").fetchall()
-    if cfg:
-        click.echo("")
-        click.echo("Build config:")
-        for row in cfg:
-            click.echo(f"  {row['key']}: {row['value']}")
-
-    conn.close()
-
-
 @cli.command("download-model")
-@click.option("--repo", default=_DEFAULT_REPO, show_default=True, help="HuggingFace repo ID")
-@click.option("--file", "filename", default=_DEFAULT_FILE, show_default=True, help="GGUF filename in repo")
+@click.option("--repo", default=_DEFAULT_REPO, show_default=True)
+@click.option("--file", "filename", default=_DEFAULT_FILE, show_default=True)
 @click.option("--dest", default=None, help="Destination directory (default: ~/.cache/combfind/models)")
 def download_model(repo, filename, dest):
     """Download a GGUF model to the local cache."""
@@ -167,4 +82,4 @@ def download_model(repo, filename, dest):
     click.echo(f"Downloading {filename} from {repo} ...")
     path = hf_hub_download(repo_id=repo, filename=filename, local_dir=str(dest_dir))
     click.echo(f"Saved to: {path}")
-    click.echo("Pass to build: --llm-model {path}  (or omit — auto-detected next time)")
+    click.echo(f"Run combfind init to build an index - model will be auto-detected.")
