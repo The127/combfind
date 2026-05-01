@@ -16,7 +16,7 @@ def query(
     db_path: str,
     top_k: int = 5,
     rerank: bool = False,
-    llm_model: str | None = None,
+    backend=None,
 ) -> list[dict]:
     if SentenceTransformer is None:
         raise ImportError("sentence-transformers is required for querying")
@@ -53,8 +53,8 @@ def query(
     top_idx = np.argsort(scores)[::-1][:fetch_k]
     candidates = [(concept_ids[i], float(scores[i])) for i in top_idx]
 
-    if rerank and llm_model:
-        candidates = _rerank(candidates, concept_meta, text, llm_model)
+    if rerank and backend is not None:
+        candidates = _rerank(candidates, concept_meta, text, backend)
 
     results = [
         _expand(conn, concept_id, score, concept_meta[concept_id], rank)
@@ -151,26 +151,32 @@ def _rerank(
     candidates: list[tuple[int, float]],
     concept_meta: dict,
     query_text: str,
-    llm_model: str,
+    backend,
 ) -> list[tuple[int, float]]:
-    try:
-        from llama_cpp import Llama
-    except ImportError:
-        return candidates
-
-    llm = Llama(model_path=llm_model, n_ctx=512, verbose=False)
     scored = []
     for concept_id, orig_score in candidates:
         meta = concept_meta[concept_id]
-        prompt = (
-            f"Query: {query_text}\n"
-            f"Concept: {meta['name']}: {meta['description']}\n"
-            f"Relevance (0.0–1.0):"
-        )
-        result = llm(prompt, max_tokens=8, echo=False)
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Rate the relevance of a code concept to a developer query. "
+                    "Reply with a single decimal number between 0.0 and 1.0. Nothing else."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Query: {query_text}\n"
+                    f"Concept: {meta['name']}: {meta['description']}\n"
+                    f"Relevance (0.0–1.0):"
+                ),
+            },
+        ]
         try:
-            score = float(result["choices"][0]["text"].strip().split()[0])
-        except (ValueError, IndexError):
+            text = backend.chat(messages, max_tokens=8)
+            score = float(text.strip().split()[0])
+        except (ValueError, IndexError, Exception):
             score = orig_score
         scored.append((concept_id, score))
 

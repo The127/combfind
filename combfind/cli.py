@@ -82,10 +82,22 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
 @click.option("--top-k", default=5, show_default=True)
 @click.option("--format", "fmt", default="text", show_default=True,
               type=click.Choice(["text", "json"]))
-def query_cmd(text, db, top_k, fmt):
+@click.option("--rerank", is_flag=True, default=False,
+              help="Rerank results with LLM (requires --llm-mode)")
+@click.option("--llm-mode", default=None, type=click.Choice(["local", "openai"]),
+              help="LLM backend for reranking")
+def query_cmd(text, db, top_k, fmt, rerank, llm_mode):
     """Query the index with free text."""
     from combfind import query as query_mod
-    results = query_mod.query(text, db_path=db, top_k=top_k)
+
+    backend = None
+    if rerank:
+        if llm_mode is None:
+            raise click.ClickException("--rerank requires --llm-mode")
+        from combfind.llm import create_backend
+        backend = create_backend(llm_mode, llm_model=_default_llm_model())
+
+    results = query_mod.query(text, db_path=db, top_k=top_k, rerank=rerank, backend=backend)
     query_mod.print_results(results, fmt=fmt)
 
 
