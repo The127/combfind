@@ -86,7 +86,10 @@ def _docstring(node) -> str | None:
     for sib in reversed(siblings[:idx]):
         if sib.type != "comment":
             break
-        lines.append(sib.text.decode("utf-8").lstrip("/ ").lstrip("* ").strip())
+        text = sib.text.decode("utf-8").strip()
+        if text.startswith("//go:"):
+            continue
+        lines.append(text.lstrip("/ ").lstrip("* ").strip())
     return " ".join(reversed(lines)) if lines else None
 
 
