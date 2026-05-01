@@ -47,8 +47,8 @@ def _fake_llm(response: dict):
         def __init__(self, model_path, **kwargs):
             pass
 
-        def __call__(self, prompt, **kwargs):
-            return {"choices": [{"text": json.dumps(response)}]}
+        def create_chat_completion(self, messages, **kwargs):
+            return {"choices": [{"message": {"content": json.dumps(response)}}]}
 
     class FakeGrammar:
         @staticmethod
@@ -111,8 +111,8 @@ def test_malformed_json_skipped(env, monkeypatch):
         def __init__(self, model_path, **kwargs):
             pass
 
-        def __call__(self, prompt, **kwargs):
-            return {"choices": [{"text": "not json at all"}]}
+        def create_chat_completion(self, messages, **kwargs):
+            return {"choices": [{"message": {"content": "not json at all"}}]}
 
     class FakeGrammar:
         @staticmethod

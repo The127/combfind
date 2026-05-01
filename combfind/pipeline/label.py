@@ -1,5 +1,4 @@
 import json
-import textwrap
 
 try:
     from llama_cpp import Llama, LlamaGrammar
@@ -60,9 +59,9 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
             (concept_id, _MAX_MEMBERS),
         ).fetchall()
 
-        prompt = _build_prompt(members)
-        result = llm(prompt, max_tokens=256, grammar=grammar, echo=False)
-        text = result["choices"][0]["text"].strip()
+        messages = _build_messages(members)
+        result = llm.create_chat_completion(messages, max_tokens=256, grammar=grammar)
+        text = result["choices"][0]["message"]["content"].strip()
 
         try:
             parsed = json.loads(text)
@@ -83,7 +82,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
     print(f"[combfind] label: {len(unlabeled)} concepts labeled")
 
 
-def _build_prompt(members) -> str:
+def _build_messages(members) -> list[dict]:
     lines = []
     for m in members:
         line = f"- {m['name']} ({m['kind']}): {m['signature'] or m['name']}"
@@ -92,16 +91,22 @@ def _build_prompt(members) -> str:
             line += f" — {doc}"
         lines.append(line)
 
-    return textwrap.dedent(f"""
-        You are analyzing a cluster of code symbols to identify the concept they represent.
-
-        Symbols in this cluster:
-        {chr(10).join(lines)}
-
-        Respond with a JSON object:
-        - "name": a short concept name (2-5 words, e.g. "User Authentication", "Database Connection Pool")
-        - "description": one sentence describing what these symbols do together
-        - "role": one of: interface, implementation, orchestrator, entry_point, domain_model, infrastructure, cross_cutting
-
-        JSON:
-    """).strip()
+    member_block = "\n".join(lines)
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a code analysis assistant. Given a cluster of code symbols, "
+                "output a JSON object with exactly these fields:\n"
+                '  "name": a short concept name (2-5 words)\n'
+                '  "description": one sentence describing what these symbols do together\n'
+                '  "role": one of: interface, implementation, orchestrator, '
+                "entry_point, domain_model, infrastructure, cross_cutting\n"
+                "Output only valid JSON, nothing else."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"Symbols in this cluster:\n{member_block}\n\nClassify this concept as JSON:",
+        },
+    ]
