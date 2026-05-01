@@ -39,6 +39,8 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
         if not skeleton:
             continue
 
+        symbol = row["qualified_name"] or row["name"]
+        telemetry.debug("docgen symbol", progress=f"{i}/{total}", symbol=symbol)
         messages = _build_messages(row, skeleton)
         doc = backend.chat(messages, max_tokens=128)
 
@@ -47,8 +49,6 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
                 "UPDATE symbols SET docstring = ? WHERE id = ?",
                 (doc[:500], row["id"]),
             )
-            telemetry.debug("docgen symbol", progress=f"{i}/{total}",
-                            symbol=row["qualified_name"] or row["name"])
 
         if i % _COMMIT_EVERY == 0:
             conn.commit()

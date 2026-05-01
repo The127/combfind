@@ -84,6 +84,27 @@ combfind query "where are database migrations" --db repo.db --format json
 | `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
 | `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
 
+## Using a remote LLM API
+
+Pass `--llm-mode openai` to use any OpenAI-compatible API instead of a local model. Configure it with environment variables:
+
+```bash
+export COMBFIND_LLM_BASE_URL=https://api.openai.com/v1
+export COMBFIND_LLM_API_KEY=sk-...
+export COMBFIND_LLM_MODEL=gpt-4o-mini
+
+combfind init /path/to/repo --db repo.db --llm-mode openai
+```
+
+Any API that speaks the OpenAI chat completions format works, including:
+
+- **OpenAI** — set `COMBFIND_LLM_BASE_URL=https://api.openai.com/v1`
+- **Ollama** — set `COMBFIND_LLM_BASE_URL=http://localhost:11434/v1` and `COMBFIND_LLM_API_KEY=ollama`
+- **LM Studio** — set `COMBFIND_LLM_BASE_URL=http://localhost:1234/v1`
+- **Any other OpenAI-compatible server** — point `COMBFIND_LLM_BASE_URL` at its `/v1` endpoint
+
+`--llm-model` is ignored in openai mode; the model is selected via `COMBFIND_LLM_MODEL`.
+
 ## Supported languages
 
 Python, Go. More languages can be added via tree-sitter grammars.

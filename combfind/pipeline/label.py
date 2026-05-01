@@ -19,6 +19,7 @@ _SCHEMA = json.dumps({
 })
 
 _MAX_MEMBERS = 20
+_COMMIT_EVERY = 10
 
 
 def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
@@ -55,6 +56,7 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
             (concept_id, _MAX_MEMBERS),
         ).fetchall()
 
+        telemetry.debug("label concept", progress=f"{i}/{total}", concept_id=concept_id)
         messages = _build_messages(members)
         text = backend.chat(messages, max_tokens=256, schema=_SCHEMA)
 
@@ -74,6 +76,9 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
             "UPDATE concepts SET name=?, description=?, role=? WHERE id=?",
             (name, description, role, concept_id),
         )
+
+        if i % _COMMIT_EVERY == 0:
+            conn.commit()
 
     conn.commit()
     conn.close()
