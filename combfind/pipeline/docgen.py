@@ -37,7 +37,6 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
     llm = Llama(model_path=llm_model, n_ctx=llm_ctx or 2048, verbose=False)
     total = len(rows)
 
-    _BATCH = 10
     for i, row in enumerate(rows, 1):
         skeleton = _read_skeleton(row, repo_path)
         if not skeleton:
@@ -52,11 +51,9 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
                 "UPDATE symbols SET docstring = ? WHERE id = ?",
                 (doc[:500], row["id"]),
             )
+            conn.commit()
             telemetry.debug("docgen symbol", progress=f"{i}/{total}",
                             symbol=row["qualified_name"] or row["name"])
-
-        if i % _BATCH == 0:
-            conn.commit()
 
     conn.commit()
     conn.close()
