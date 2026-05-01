@@ -4,7 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "combfind"
-version = "0.1.25"
+<<<<<<< HEAD
+version = "1.0.0"
+=======
+version = "1.0.0"
+>>>>>>> 259574d (release: v1.0.0)
 description = "Queryable concept map of a codebase for LLM coding agents"
 readme = "README.md"
 license = { text = "MIT" }
