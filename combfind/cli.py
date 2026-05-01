@@ -93,6 +93,12 @@ def stage_cmd(stage_name, db_path, extra):
     params = {}
     for kv in extra:
         k, _, v = kv.partition("=")
+        for cast in (int, float):
+            try:
+                v = cast(v)
+                break
+            except ValueError:
+                pass
         params[k.replace("-", "_")] = v
 
     pipeline_run.run_stage(stage_name, db_path, **params)

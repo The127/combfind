@@ -39,7 +39,7 @@ def run(db_path: str, *, cluster_min_size: int | None = None, noise: str = "sing
     )
 
     n = len(symbol_ids)
-    min_size = cluster_min_size if cluster_min_size is not None else max(5, n // 100)
+    min_size = int(cluster_min_size) if cluster_min_size is not None else 5
 
     clusterer = _hdbscan_mod.HDBSCAN(min_cluster_size=min_size, metric="euclidean")
     labels = clusterer.fit_predict(embeddings)
