@@ -4,6 +4,11 @@ class PythonWalker:
         _walk(root, module_name, class_stack=[], results=results)
         return results
 
+    def extract_skeleton(self, source: str, kind: str) -> str:
+        if kind != "class":
+            return source
+        return _class_skeleton(source)
+
 
 def _walk(node, module_name: str, class_stack: list[str], results: list[dict]) -> None:
     if node.type == "class_definition":
@@ -64,6 +69,30 @@ def _walk(node, module_name: str, class_stack: list[str], results: list[dict]) -
 
     for child in node.named_children:
         _walk(child, module_name, class_stack, results)
+
+
+def _class_skeleton(source: str) -> str:
+    import re
+    lines = source.splitlines()
+    result = []
+    skip_until_indent: int | None = None
+    for line in lines:
+        stripped = line.lstrip()
+        if not stripped:
+            result.append(line)
+            continue
+        indent = len(line) - len(stripped)
+        if skip_until_indent is not None:
+            if indent > skip_until_indent:
+                continue
+            skip_until_indent = None
+        if re.match(r"(async\s+)?def\s+", stripped) and indent > 0:
+            result.append(line.rstrip(":") + ":" if not line.rstrip().endswith(":") else line)
+            result.append(" " * (indent + 4) + "...")
+            skip_until_indent = indent
+        else:
+            result.append(line)
+    return "\n".join(result)
 
 
 def _docstring(body_node) -> str | None:

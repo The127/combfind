@@ -94,7 +94,7 @@ def _build_messages(members) -> list[dict]:
     for m in members:
         line = f"- {m['qualified_name'] or m['name']} ({m['kind']}): {m['signature'] or m['name']}"
         if m["docstring"]:
-            doc = m["docstring"][:80].replace("\n", " ")
+            doc = m["docstring"][:120].replace("\n", " ")
             line += f" — {doc}"
         lines.append(line)
 

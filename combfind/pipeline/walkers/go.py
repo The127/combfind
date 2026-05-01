@@ -70,6 +70,9 @@ class GoWalker:
 
         return results
 
+    def extract_skeleton(self, source: str, kind: str) -> str:
+        return source
+
 
 def _docstring(node) -> str | None:
     parent = node.parent

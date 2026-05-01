@@ -9,7 +9,8 @@ from combfind import telemetry
 # stages 2+3 are independent of each other; run them concurrently
 _PLAN: list[list[str]] = [
     ["parse"],
-    ["index", "embed"],
+    ["index", "docgen"],
+    ["embed"],
     ["cluster"],
     ["label"],
     ["embed_concepts"],
@@ -19,11 +20,12 @@ _ALL_STAGES = [s for group in _PLAN for s in group]
 
 
 def _stage_fn(name: str):
-    from combfind.pipeline import cluster, embed, embed_concepts, index, label, parse
+    from combfind.pipeline import cluster, docgen, embed, embed_concepts, index, label, parse
 
     return {
         "parse": parse.run,
         "index": index.run,
+        "docgen": docgen.run,
         "embed": embed.run,
         "cluster": cluster.run,
         "label": label.run,
