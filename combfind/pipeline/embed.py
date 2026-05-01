@@ -19,7 +19,7 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     conn = get_connection(db_path)
 
     rows = conn.execute(
-        """SELECT s.id, s.name, s.signature, s.docstring
+        """SELECT s.id, s.qualified_name, s.name, s.signature, s.docstring
            FROM symbols s
            LEFT JOIN symbol_embeddings se ON se.symbol_id = s.id
            WHERE se.symbol_id IS NULL"""
@@ -35,7 +35,7 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     texts = []
     ids = []
     for row in rows:
-        parts = [row["name"]]
+        parts = [row["qualified_name"] or row["name"]]
         if row["signature"] and row["signature"] != row["name"]:
             parts.append(row["signature"])
         if row["docstring"]:

@@ -15,7 +15,7 @@ except ImportError:
         class _hdbscan_mod:  # type: ignore[no-redef]
             class HDBSCAN:
                 def __init__(self, min_cluster_size: int = 5, metric: str = "euclidean", **_):
-                    self._inner = _SklearnHDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+                    self._inner = _SklearnHDBSCAN(min_cluster_size=min_cluster_size, metric=metric, copy=False)
 
                 def fit_predict(self, X):
                     return self._inner.fit_predict(X)

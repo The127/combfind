@@ -73,10 +73,16 @@ def _run_one(stage: str, db_path: str, input_hash: str, params: dict) -> None:
         conn = get_connection(db_path)
         _mark(conn, stage, "done", input_hash, params)
         conn.close()
-    except Exception:
+    except ImportError as exc:
+        conn = get_connection(db_path)
+        _mark(conn, stage, "skipped")
+        conn.close()
+        telemetry.warning("stage skipped", stage=stage, reason=str(exc))
+    except Exception as exc:
         conn = get_connection(db_path)
         _mark(conn, stage, "failed")
         conn.close()
+        telemetry.error("stage failed", stage=stage, reason=str(exc))
         raise
 
 

@@ -6,8 +6,8 @@ import click
 from combfind.db import create_schema, get_connection
 
 _MODELS_DIR = Path.home() / ".cache" / "combfind" / "models"
-_DEFAULT_REPO = "Qwen/Qwen2.5-3B-Instruct-GGUF"
-_DEFAULT_FILE = "qwen2.5-3b-instruct-q4_k_m.gguf"
+_DEFAULT_REPO = "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+_DEFAULT_FILE = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
 
 
 def _default_llm_model() -> str | None:

@@ -45,14 +45,16 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
         conn.close()
         return
 
+    telemetry.info("label loading model", model=llm_model)
     llm = Llama(model_path=llm_model, n_ctx=llm_ctx or 2048, verbose=False)
     grammar = LlamaGrammar.from_json_schema(_SCHEMA)
+    total = len(unlabeled)
 
-    for row in unlabeled:
+    for i, row in enumerate(unlabeled, 1):
         concept_id = row["id"]
 
         members = conn.execute(
-            """SELECT s.name, s.kind, s.signature, s.docstring
+            """SELECT s.qualified_name, s.name, s.kind, s.signature, s.docstring
                FROM concept_members cm
                JOIN symbols s ON s.id = cm.symbol_id
                WHERE cm.concept_id = ?
@@ -68,11 +70,14 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError:
+            telemetry.warning("label parse error", concept_id=concept_id, progress=f"{i}/{total}")
             continue
 
         name = str(parsed.get("name", ""))[:120]
         description = str(parsed.get("description", ""))[:500]
         role = parsed.get("role") if parsed.get("role") in _ROLES else None
+
+        telemetry.debug("concept labeled", progress=f"{i}/{total}", name=name, role=role)
 
         conn.execute(
             "UPDATE concepts SET name=?, description=?, role=? WHERE id=?",
@@ -87,7 +92,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
 def _build_messages(members) -> list[dict]:
     lines = []
     for m in members:
-        line = f"- {m['name']} ({m['kind']}): {m['signature'] or m['name']}"
+        line = f"- {m['qualified_name'] or m['name']} ({m['kind']}): {m['signature'] or m['name']}"
         if m["docstring"]:
             doc = m["docstring"][:80].replace("\n", " ")
             line += f" — {doc}"
