@@ -103,10 +103,12 @@ def _build_messages(members) -> list[dict]:
         {
             "role": "system",
             "content": (
-                "You are a code analysis assistant. Given a cluster of code symbols, "
+                "You are a code analysis assistant. Given a cluster of related code symbols, "
                 "output a JSON object with exactly these fields:\n"
-                '  "name": a short concept name (2-5 words)\n'
-                '  "description": one sentence describing what these symbols do together\n'
+                '  "name": a short concept name (2-5 words) — must be specific, never generic terms like "function", "class", "code", or "interface"\n'
+                '  "description": one sentence a developer would search for to find this code — '
+                "mention specific technologies, patterns, file types, or use cases; "
+                "write it so queries like 'how do I add Go support?' or 'where is auth handled?' would match\n"
                 '  "role": one of: interface, implementation, orchestrator, '
                 "entry_point, domain_model, infrastructure, cross_cutting\n"
                 "Output only valid JSON, nothing else."
