@@ -1,6 +1,7 @@
 import hashlib
 import importlib
 import os
+import re
 from pathlib import Path
 
 from combfind.db import get_connection
@@ -9,17 +10,34 @@ from combfind.languages import LANGUAGES
 _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build", ".tox"}
 
 
-def run(db_path: str, *, repo_path: str, **_) -> None:
+def run(
+    db_path: str,
+    *,
+    repo_path: str,
+    exclude_paths: list[str] | None = None,
+    exclude_regex: str | None = None,
+    **_,
+) -> None:
     conn = get_connection(db_path)
 
     parsers = _build_parsers()
     ext_map = {ext: lang for lang, ld in LANGUAGES.items() if lang in parsers for ext in ld.extensions}
 
     repo = Path(repo_path).resolve()
+    excluded = {p.rstrip("/") for p in (exclude_paths or [])}
+    pattern = re.compile(exclude_regex) if exclude_regex else None
     processed = skipped = 0
 
     for dirpath, dirnames, filenames in os.walk(repo):
-        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")]
+        rel_dir = str(Path(dirpath).relative_to(repo))
+
+        dirnames[:] = [
+            d for d in dirnames
+            if d not in _SKIP_DIRS
+            and not d.startswith(".")
+            and not _excluded_by_path("." if rel_dir == "." else f"{rel_dir}/{d}", excluded)
+            and not (pattern and pattern.search("." if rel_dir == "." else f"{rel_dir}/{d}"))
+        ]
 
         for filename in filenames:
             ext = Path(filename).suffix
@@ -28,12 +46,17 @@ def run(db_path: str, *, repo_path: str, **_) -> None:
                 continue
 
             file_path = Path(dirpath) / filename
+            rel_path = str(file_path.relative_to(repo))
+
+            if _excluded_by_path(rel_path, excluded):
+                continue
+            if pattern and pattern.search(rel_path):
+                continue
+
             try:
                 content = file_path.read_bytes()
             except OSError:
                 continue
-
-            rel_path = str(file_path.relative_to(repo))
             content_hash = hashlib.sha256(content).hexdigest()
 
             if conn.execute(
@@ -73,6 +96,17 @@ def run(db_path: str, *, repo_path: str, **_) -> None:
 # ---------------------------------------------------------------------------
 # internals
 # ---------------------------------------------------------------------------
+
+def _excluded_by_path(rel_path: str, excluded: set[str]) -> bool:
+    """Return True if rel_path or any of its parents is in excluded."""
+    if not excluded:
+        return False
+    parts = Path(rel_path).parts
+    for i in range(1, len(parts) + 1):
+        if str(Path(*parts[:i])) in excluded:
+            return True
+    return False
+
 
 def _build_parsers() -> dict:
     from tree_sitter import Parser

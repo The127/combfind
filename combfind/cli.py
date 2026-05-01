@@ -19,7 +19,12 @@ def cli():
 @click.option("--cluster-min-size", default=None, type=int)
 @click.option("--noise", default="singleton", show_default=True,
               type=click.Choice(["singleton", "merge", "drop"]))
-def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster_min_size, noise):
+@click.option("--exclude-paths", multiple=True, metavar="PATH",
+              help="Paths to exclude relative to repo root (repeatable, e.g. --exclude-paths tests)")
+@click.option("--exclude-regex", default=None, metavar="PATTERN",
+              help="Regex matched against relative file paths to exclude (e.g. '.*_generated\\.py')")
+def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster_min_size,
+          noise, exclude_paths, exclude_regex):
     """Build a combfind map for a repository."""
     import os
     from combfind.pipeline import run as pipeline_run
@@ -40,6 +45,8 @@ def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster
         llm_ctx=llm_ctx,
         cluster_min_size=cluster_min_size,
         noise=noise,
+        exclude_paths=list(exclude_paths) or None,
+        exclude_regex=exclude_regex,
     )
 
 

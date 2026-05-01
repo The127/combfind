@@ -102,3 +102,36 @@ def test_reruns_on_file_change(env, tmp_path):
 
     syms = _symbols(db_path)
     assert "extra" in syms
+
+
+def test_exclude_paths(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "main.py").write_text("def kept(): pass\n")
+    (tmp_path / "generated").mkdir()
+    (tmp_path / "generated" / "auto.py").write_text("def excluded(): pass\n")
+
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path), exclude_paths=["generated"])
+    syms = _symbols(db_path)
+    assert "kept" in syms
+    assert "excluded" not in syms
+
+
+def test_exclude_regex(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "service.py").write_text("def real(): pass\n")
+    (tmp_path / "src" / "service_pb2.py").write_text("def generated(): pass\n")
+
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path), exclude_regex=r".*_pb2\.py$")
+    syms = _symbols(db_path)
+    assert "real" in syms
+    assert "generated" not in syms
