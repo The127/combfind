@@ -41,6 +41,7 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
         )
 
         k = max(1, round(len(pkg_rows) / _TARGET_CONCEPT_SIZE))
+        telemetry.debug("cluster package", package=pkg, symbols=len(pkg_rows), k=k)
         if k == 1:
             _insert_concept(conn, symbol_ids, embeddings, list(range(len(pkg_rows))))
             total_concepts += 1
