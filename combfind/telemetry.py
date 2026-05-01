@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -51,7 +52,16 @@ def add_handler(handler: Handler) -> None:
         _handlers.append(handler)
 
 
+_LEVEL_ORDER = {Level.DEBUG: 0, Level.INFO: 1, Level.WARNING: 2, Level.ERROR: 3}
+
+
 def emit(level: Level, msg: str, **data) -> None:
+    try:
+        min_level = Level(os.environ.get("COMBFIND_LOG_LEVEL", "info").lower())
+    except ValueError:
+        min_level = Level.INFO
+    if _LEVEL_ORDER[level] < _LEVEL_ORDER[min_level]:
+        return
     event = Event(level=level, msg=msg, data=data)
     with _lock:
         handlers = list(_handlers)

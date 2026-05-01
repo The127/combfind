@@ -55,6 +55,12 @@ combfind query "where are database migrations" --db repo.db --format json
 | `--exclude-paths` | - | Paths to skip, relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
 
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
+
 ## Supported languages
 
 Python, Go. More languages can be added via tree-sitter grammars.
