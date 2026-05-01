@@ -1,5 +1,7 @@
 import json
 
+from combfind import telemetry
+
 try:
     from llama_cpp import Llama, LlamaGrammar
 except ImportError:
@@ -39,7 +41,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
     ).fetchall()
 
     if not unlabeled:
-        print("[combfind] label: no unlabeled concepts, skipping")
+        telemetry.debug("label skipped, no unlabeled concepts")
         conn.close()
         return
 
@@ -79,7 +81,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
 
     conn.commit()
     conn.close()
-    print(f"[combfind] label: {len(unlabeled)} concepts labeled")
+    telemetry.info("label complete", concepts=len(unlabeled))
 
 
 def _build_messages(members) -> list[dict]:

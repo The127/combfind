@@ -1,6 +1,8 @@
 import json
 from collections import defaultdict
 
+from combfind import telemetry
+
 import numpy as np
 
 try:
@@ -73,7 +75,7 @@ def run(db_path: str, *, cluster_min_size: int | None = None, noise: str = "sing
     conn.close()
 
     n_real = sum(1 for k in clusters if k >= 0)
-    print(f"[combfind] cluster: {n_real} clusters, {len(noise_indices)} noise ({noise})")
+    telemetry.info("cluster complete", clusters=n_real, noise=len(noise_indices), noise_strategy=noise)
 
 
 def _insert_concept(conn, symbol_ids: list, embeddings: np.ndarray, indices: list, *, name: str | None = None) -> None:

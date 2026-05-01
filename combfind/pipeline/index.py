@@ -1,6 +1,7 @@
 import re
 
 from combfind.db import get_connection
+from combfind import telemetry
 
 
 def run(db_path: str, **_) -> None:
@@ -41,7 +42,7 @@ def run(db_path: str, **_) -> None:
 
     conn.commit()
     conn.close()
-    print(f"[combfind] index: {inserted} references written")
+    telemetry.info("index complete", references=inserted)
 
 
 def _parse_bases(signature: str | None) -> list[str]:

@@ -8,6 +8,7 @@ except ImportError:
     SentenceTransformer = None  # type: ignore[assignment,misc]
 
 from combfind.db import get_connection
+from combfind import telemetry
 
 
 def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
@@ -31,7 +32,7 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     ).fetchall()
 
     if not rows:
-        print("[combfind] embed_concepts: all concepts already embedded, skipping")
+        telemetry.debug("embed_concepts skipped, all concepts already embedded")
         conn.close()
         return
 
@@ -51,4 +52,4 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
 
     conn.commit()
     conn.close()
-    print(f"[combfind] embed_concepts: {len(concept_ids)} concepts embedded ({embed_model})")
+    telemetry.info("embed_concepts complete", concepts=len(concept_ids), model=embed_model)

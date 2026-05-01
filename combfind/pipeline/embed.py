@@ -1,5 +1,7 @@
 import json
 
+from combfind import telemetry
+
 try:
     from sentence_transformers import SentenceTransformer
 except ImportError:  # pragma: no cover
@@ -24,7 +26,7 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     ).fetchall()
 
     if not rows:
-        print("[combfind] embed: all symbols already embedded, skipping")
+        telemetry.debug("embed skipped, all symbols already embedded")
         conn.close()
         return
 
@@ -59,4 +61,4 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
 
     conn.commit()
     conn.close()
-    print(f"[combfind] embed: {len(ids)} symbols embedded ({embed_model}, dim={dim})")
+    telemetry.info("embed complete", symbols=len(ids), model=embed_model, dim=dim)

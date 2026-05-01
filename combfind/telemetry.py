@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import threading
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Protocol
+
+
+class Level(str, Enum):
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
+@dataclass
+class Event:
+    level: Level
+    msg: str
+    data: dict = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class Handler(Protocol):
+    def handle(self, event: Event) -> None: ...
+
+
+class ConsoleHandler:
+    def handle(self, event: Event) -> None:
+        ts = event.timestamp.strftime("%H:%M:%S")
+        prefix = "" if event.level in (Level.INFO, Level.DEBUG) else f"{event.level.value.upper()} "
+        kv = "  ".join(f"{k}={v}" for k, v in event.data.items())
+        line = f"{ts} [combfind] {prefix}{event.msg}"
+        if kv:
+            line += f"  {kv}"
+        print(line)
+
+
+_lock = threading.Lock()
+_handlers: list[Handler] = [ConsoleHandler()]
+
+
+def set_handlers(handlers: list[Handler]) -> None:
+    with _lock:
+        _handlers[:] = handlers
+
+
+def add_handler(handler: Handler) -> None:
+    with _lock:
+        _handlers.append(handler)
+
+
+def emit(level: Level, msg: str, **data) -> None:
+    event = Event(level=level, msg=msg, data=data)
+    with _lock:
+        handlers = list(_handlers)
+    for h in handlers:
+        h.handle(event)
+
+
+def info(msg: str, **data) -> None:
+    emit(Level.INFO, msg, **data)
+
+
+def warning(msg: str, **data) -> None:
+    emit(Level.WARNING, msg, **data)
+
+
+def error(msg: str, **data) -> None:
+    emit(Level.ERROR, msg, **data)
+
+
+def debug(msg: str, **data) -> None:
+    emit(Level.DEBUG, msg, **data)

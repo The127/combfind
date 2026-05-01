@@ -7,6 +7,7 @@ from pathlib import Path
 from combfind.db import get_connection
 from combfind.languages import LANGUAGES
 from combfind.pipeline.walkers import get_walker
+from combfind import telemetry
 
 _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build", ".tox"}
 
@@ -92,7 +93,7 @@ def run(
 
     conn.commit()
     conn.close()
-    print(f"[combfind] parse: {processed} files processed, {skipped} unchanged")
+    telemetry.info("parse complete", files_processed=processed, files_unchanged=skipped)
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +122,7 @@ def _build_parsers() -> dict:
             lang = Language(mod.language())
             parsers[lang_name] = Parser(lang)
         except (ImportError, Exception) as exc:
-            print(f"[combfind] warning: skipping language {lang_name!r}: {exc}")
+            telemetry.warning("skipping language", language=lang_name, reason=str(exc))
     return parsers
 
 

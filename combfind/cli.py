@@ -40,8 +40,6 @@ def init_cmd(repo_path, db, llm_model, exclude_paths, exclude_regex):
     conn.close()
 
     resolved_llm = llm_model or _default_llm_model()
-    if resolved_llm and resolved_llm != llm_model:
-        click.echo(f"[combfind] using model: {Path(resolved_llm).name}")
 
     pipeline_run.run(
         db_path,

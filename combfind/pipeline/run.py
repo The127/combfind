@@ -4,6 +4,7 @@ import json
 import time
 
 from combfind.db import get_connection
+from combfind import telemetry
 
 # stages 2+3 are independent of each other; run them concurrently
 _PLAN: list[list[str]] = [
@@ -61,10 +62,10 @@ def _mark(conn, stage: str, status: str, input_hash: str | None = None, params: 
 def _run_one(stage: str, db_path: str, input_hash: str, params: dict) -> None:
     conn = get_connection(db_path)
     if _is_cached(conn, stage, input_hash):
-        print(f"[combfind] stage {stage}: cached, skipping")
+        telemetry.debug("stage cached, skipping", stage=stage)
         conn.close()
         return
-    print(f"[combfind] stage {stage}: running")
+    telemetry.info("stage running", stage=stage)
     _mark(conn, stage, "running")
     conn.close()
     try:
