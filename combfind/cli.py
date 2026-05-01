@@ -84,20 +84,27 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
               type=click.Choice(["text", "json"]))
 @click.option("--rerank", is_flag=True, default=False,
               help="Rerank results with LLM (requires --llm-mode)")
+@click.option("--agentic", is_flag=True, default=False,
+              help="Run iterative agentic query loop (requires --llm-mode)")
+@click.option("--agentic-limit", default=3, show_default=True, type=int,
+              help="Max iterations for --agentic mode")
 @click.option("--llm-mode", default=None, type=click.Choice(["local", "openai"]),
-              help="LLM backend for reranking")
-def query_cmd(text, db, top_k, fmt, rerank, llm_mode):
+              help="LLM backend for reranking or agentic mode")
+def query_cmd(text, db, top_k, fmt, rerank, agentic, agentic_limit, llm_mode):
     """Query the index with free text."""
     from combfind import query as query_mod
 
     backend = None
-    if rerank:
+    if rerank or agentic:
         if llm_mode is None:
-            raise click.ClickException("--rerank requires --llm-mode")
+            raise click.ClickException("--rerank and --agentic require --llm-mode")
         from combfind.llm import create_backend
         backend = create_backend(llm_mode, llm_model=_default_llm_model())
 
-    results = query_mod.query(text, db_path=db, top_k=top_k, rerank=rerank, backend=backend)
+    if agentic:
+        results = query_mod.agentic_query(text, db_path=db, top_k=top_k, backend=backend, max_iterations=agentic_limit)
+    else:
+        results = query_mod.query(text, db_path=db, top_k=top_k, rerank=rerank, backend=backend)
     query_mod.print_results(results, fmt=fmt)
 
 

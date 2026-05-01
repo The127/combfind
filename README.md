@@ -115,6 +115,10 @@ concept siblings (1):
 | `--db` | `.combfind.db` | Database to query |
 | `--top-k` | 5 | Number of results to return |
 | `--format` | `text` | Output format: `text` or `json` |
+| `--rerank` | off | Re-score results with LLM for better precision (requires `--llm-mode`) |
+| `--agentic` | off | Run iterative query loop: LLM steers follow-up searches until satisfied (requires `--llm-mode`) |
+| `--agentic-limit` | `3` | Max iterations for `--agentic` mode |
+| `--llm-mode` | - | LLM backend for `--rerank` / `--agentic`: `local` or `openai` |
 
 ### Inspect options
 

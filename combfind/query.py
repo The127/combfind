@@ -17,6 +17,7 @@ def query(
     top_k: int = 5,
     rerank: bool = False,
     backend=None,
+    _model=None,
 ) -> list[dict]:
     if SentenceTransformer is None:
         raise ImportError("sentence-transformers is required for querying")
@@ -42,7 +43,7 @@ def query(
     concept_meta = {r["concept_id"]: dict(r) for r in rows}
     embs = np.array([np.frombuffer(r["embedding"], dtype=np.float32) for r in rows])
 
-    model = SentenceTransformer(embed_model)
+    model = _model or SentenceTransformer(embed_model)
     query_emb = model.encode([text], convert_to_numpy=True)[0].astype(np.float32)
 
     q_norm = float(np.linalg.norm(query_emb))
@@ -137,6 +138,7 @@ def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
         siblings = [{"name": r["name"], "file": r["path"]} for r in sibling_rows]
 
     return {
+        "concept_id": concept_id,
         "rank": rank,
         "concept": meta["name"] or f"concept_{concept_id}",
         "role": meta["role"],
@@ -181,3 +183,90 @@ def _rerank(
         scored.append((concept_id, score))
 
     return sorted(scored, key=lambda x: x[1], reverse=True)
+
+
+_STEER_SCHEMA = json.dumps({
+    "type": "object",
+    "properties": {
+        "done": {"type": "boolean"},
+        "next_query": {"type": "string"},
+    },
+    "required": ["done"],
+})
+
+
+def _steer(original_query: str, results: list[dict], backend, iteration: int) -> str | None:
+    """Returns a follow-up query string, or None if done."""
+    summaries = "\n".join(
+        f"- {r['concept']} ({r['role']}): {r['why_relevant']}" for r in results
+    )
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are helping a developer find relevant code in a codebase index.\n"
+                "Given their query and the top concepts retrieved, decide:\n"
+                '- Output {"done": true} if the concepts directly address the query.\n'
+                '- Output {"done": false, "next_query": "..."} ONLY if there is a clearly '
+                "different aspect of the query not covered at all by the current results. "
+                "The follow-up must use different keywords, not just rephrase the original.\n"
+                "Default to done. Output only valid JSON, nothing else."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Query: {original_query}\n\n"
+                f"Top concepts (iteration {iteration}):\n{summaries}\n\n"
+                "Done or follow up?"
+            ),
+        },
+    ]
+    try:
+        text = backend.chat(messages, schema=_STEER_SCHEMA)
+        parsed = json.loads(text)
+        if parsed.get("done"):
+            return None
+        return parsed.get("next_query") or None
+    except Exception:
+        return None
+
+
+def agentic_query(
+    text: str,
+    *,
+    db_path: str,
+    top_k: int = 5,
+    backend,
+    max_iterations: int = 3,
+) -> list[dict]:
+    from combfind import telemetry
+
+    conn = get_connection(db_path)
+    cfg_row = conn.execute("SELECT value FROM build_config WHERE key = 'embed_model'").fetchone()
+    embed_model = json.loads(cfg_row[0]) if cfg_row else "all-MiniLM-L6-v2"
+    conn.close()
+    model = SentenceTransformer(embed_model)
+
+    merged: dict[int, dict] = {}
+    current_query = text
+
+    for i in range(max_iterations):
+        telemetry.debug("agentic iteration", iteration=i + 1, query=current_query)
+        results = query(current_query, db_path=db_path, top_k=top_k * 2, _model=model)
+
+        for r in results:
+            cid = r["concept_id"]
+            if cid not in merged or r["score"] > merged[cid]["score"]:
+                merged[cid] = r
+
+        next_query = _steer(text, results, backend, i + 1)
+        telemetry.debug("agentic steer", next_query=next_query or "done")
+        if next_query is None:
+            break
+        current_query = next_query
+
+    ranked = sorted(merged.values(), key=lambda r: r["score"], reverse=True)[:top_k]
+    for i, r in enumerate(ranked, 1):
+        r["rank"] = i
+    return ranked
