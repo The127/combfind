@@ -3,7 +3,7 @@ from typing import Protocol
 
 
 class LLMBackend(Protocol):
-    def chat(self, messages: list[dict], max_tokens: int, schema: str | None = None) -> str:
+    def chat(self, messages: list[dict], max_tokens: int | None = None, schema: str | None = None) -> str:
         ...
 
 
@@ -15,7 +15,7 @@ class LocalBackend:
             raise ImportError("llama-cpp-python is required: pip install 'combfind[llm]'")
         self._llm = Llama(model_path=model_path, n_ctx=n_ctx, verbose=False)
 
-    def chat(self, messages: list[dict], max_tokens: int, schema: str | None = None) -> str:
+    def chat(self, messages: list[dict], max_tokens: int | None = None, schema: str | None = None) -> str:
         grammar = None
         if schema is not None:
             from llama_cpp import LlamaGrammar
@@ -33,7 +33,7 @@ class OpenAIBackend:
         self._client = OpenAI(base_url=base_url, api_key=api_key)
         self._model = model or "gpt-4o-mini"
 
-    def chat(self, messages: list[dict], max_tokens: int, schema: str | None = None) -> str:
+    def chat(self, messages: list[dict], max_tokens: int | None = None, schema: str | None = None) -> str:
         kwargs: dict = {}
         if schema is not None:
             kwargs["response_format"] = {"type": "json_object"}

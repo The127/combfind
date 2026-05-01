@@ -46,7 +46,7 @@ class FakeBackend:
     def __init__(self, response: dict | str):
         self._response = response if isinstance(response, str) else json.dumps(response)
 
-    def chat(self, messages, max_tokens, schema=None):
+    def chat(self, messages, max_tokens=None, schema=None):
         return self._response
 
 

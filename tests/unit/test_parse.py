@@ -145,6 +145,67 @@ def test_deleted_file_removed_from_db(tmp_path):
     assert "func_b" not in syms
 
 
+def test_unchanged_file_preserves_docstring(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("def nodoc(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    conn.execute("UPDATE symbols SET docstring = 'generated' WHERE name = 'nodoc'")
+    conn.commit()
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    syms = _symbols(db_path)
+    assert syms["nodoc"]["docstring"] == "generated"
+
+
+def test_changed_file_resets_docstring(tmp_path):
+    (tmp_path / "src").mkdir()
+    f = tmp_path / "src" / "a.py"
+    f.write_text("def nodoc(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    conn.execute("UPDATE symbols SET docstring = 'generated' WHERE name = 'nodoc'")
+    conn.commit()
+    conn.close()
+
+    f.write_text("def nodoc(): pass\n# changed\n")
+    run(db_path, repo_path=str(tmp_path))
+
+    syms = _symbols(db_path)
+    assert syms["nodoc"]["docstring"] is None
+
+
+def test_deleted_file_removes_symbols(tmp_path):
+    (tmp_path / "src").mkdir()
+    f = tmp_path / "src" / "a.py"
+    f.write_text("def todelete(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+    assert "todelete" in _symbols(db_path)
+
+    f.unlink()
+    run(db_path, repo_path=str(tmp_path))
+    assert "todelete" not in _symbols(db_path)
+
+
 def test_exclude_regex(tmp_path):
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "service.py").write_text("def real(): pass\n")

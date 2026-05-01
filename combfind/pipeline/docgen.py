@@ -42,7 +42,7 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
         symbol = row["qualified_name"] or row["name"]
         telemetry.debug("docgen symbol", progress=f"{i}/{total}", symbol=symbol)
         messages = _build_messages(row, skeleton)
-        doc = backend.chat(messages, max_tokens=128)
+        doc = backend.chat(messages)
 
         if doc:
             conn.execute(

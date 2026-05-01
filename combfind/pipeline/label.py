@@ -58,7 +58,7 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
 
         telemetry.debug("label concept", progress=f"{i}/{total}", concept_id=concept_id)
         messages = _build_messages(members)
-        text = backend.chat(messages, max_tokens=256, schema=_SCHEMA)
+        text = backend.chat(messages, schema=_SCHEMA)
 
         try:
             parsed = json.loads(text)
