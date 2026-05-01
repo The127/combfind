@@ -29,6 +29,7 @@ def run(
     excluded = {p.rstrip("/") for p in (exclude_paths or [])}
     pattern = re.compile(exclude_regex) if exclude_regex else None
     processed = skipped = 0
+    seen_paths: set[str] = set()
 
     for dirpath, dirnames, filenames in os.walk(repo):
         rel_dir = str(Path(dirpath).relative_to(repo))
@@ -54,6 +55,8 @@ def run(
                 continue
             if pattern and pattern.search(rel_path):
                 continue
+
+            seen_paths.add(rel_path)
 
             try:
                 content = file_path.read_bytes()
@@ -91,9 +94,15 @@ def run(
 
             processed += 1
 
+    deleted = 0
+    for (path,) in conn.execute("SELECT path FROM files").fetchall():
+        if path not in seen_paths:
+            conn.execute("DELETE FROM files WHERE path = ?", (path,))
+            deleted += 1
+
     conn.commit()
     conn.close()
-    telemetry.info("parse complete", files_processed=processed, files_unchanged=skipped)
+    telemetry.info("parse complete", files_processed=processed, files_unchanged=skipped, files_deleted=deleted)
 
 
 # ---------------------------------------------------------------------------

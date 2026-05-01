@@ -121,6 +121,30 @@ def test_exclude_paths(tmp_path):
     assert "excluded" not in syms
 
 
+def test_deleted_file_removed_from_db(tmp_path):
+    (tmp_path / "src").mkdir()
+    a = tmp_path / "src" / "a.py"
+    b = tmp_path / "src" / "b.py"
+    a.write_text("def func_a(): pass\n")
+    b.write_text("def func_b(): pass\n")
+
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+    syms = _symbols(db_path)
+    assert "func_a" in syms
+    assert "func_b" in syms
+
+    b.unlink()
+    run(db_path, repo_path=str(tmp_path))
+    syms = _symbols(db_path)
+    assert "func_a" in syms
+    assert "func_b" not in syms
+
+
 def test_exclude_regex(tmp_path):
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "service.py").write_text("def real(): pass\n")
