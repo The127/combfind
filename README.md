@@ -25,15 +25,28 @@ For a remote OpenAI-compatible API instead:
 pip3 install "combfind[openai]"
 ```
 
+For Apple Silicon (MLX):
+
+```bash
+pip3 install "combfind[mlx]"
+```
+
 ## Usage
 
 ```bash
 # Index a repository (local LLM, auto-detected model)
 combfind init /path/to/repo --db repo.db
 
+# Exclude test files (recommended for cleaner concepts)
+combfind init /path/to/repo --db repo.db --exclude-regex '.*test.*'
+
 # Index using a remote OpenAI-compatible API
 COMBFIND_LLM_API_KEY=sk-... COMBFIND_LLM_MODEL=gpt-4o-mini \
   combfind init /path/to/repo --db repo.db --llm-mode openai
+
+# Index using Apple Silicon MLX
+combfind init /path/to/repo --db repo.db --llm-mode mlx \
+  --llm-model mlx-community/Qwen2.5-7B-Instruct-4bit
 
 # Query it
 combfind query "how does authentication work" --db repo.db
@@ -157,6 +170,16 @@ Any API that speaks the OpenAI chat completions format works, including:
 - **Any other OpenAI-compatible server** — point `COMBFIND_LLM_BASE_URL` at its `/v1` endpoint
 
 `--llm-model` is ignored in openai mode; the model is selected via `COMBFIND_LLM_MODEL`.
+
+## Clustering
+
+combfind groups symbols by their package/directory, then sub-clusters large packages using KMeans (targeting ~20 symbols per concept). This produces stable, interpretable concepts aligned with the codebase structure.
+
+For best results, exclude test files at index time:
+
+```bash
+combfind init . --exclude-regex '.*test.*'
+```
 
 ## Supported languages
 
