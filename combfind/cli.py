@@ -22,6 +22,13 @@ def cli():
     """combfind — queryable concept map of a codebase."""
 
 
+@cli.command("version")
+def version_cmd():
+    """Show the installed version."""
+    from importlib.metadata import version
+    click.echo(version("combfind"))
+
+
 @cli.command("init")
 @click.argument("repo_path", default=".", required=False)
 @click.option("--db", default=None, help="Database path (default: <repo_path>/.combfind.db)")
