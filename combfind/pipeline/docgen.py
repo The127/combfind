@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from combfind import telemetry
@@ -7,7 +8,7 @@ from combfind.db import get_connection
 _COMMIT_EVERY = 10
 
 
-def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
+def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, llm_workers: int = 1, **_) -> None:
     if backend is None:
         if llm_model is None:
             telemetry.debug("docgen skipped, no llm backend configured")
@@ -31,27 +32,30 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
         conn.close()
         return
 
-    telemetry.info("docgen running", symbols=len(rows))
+    telemetry.info("docgen running", symbols=len(rows), workers=llm_workers)
     total = len(rows)
 
-    for i, row in enumerate(rows, 1):
+    def _generate(row):
         skeleton = _read_skeleton(row, repo_path)
         if not skeleton:
-            continue
-
-        symbol = row["qualified_name"] or row["name"]
-        telemetry.debug("docgen symbol", progress=f"{i}/{total}", symbol=symbol)
+            return row["id"], None
         messages = _build_messages(row, skeleton)
         doc = backend.chat(messages)
+        return row["id"], doc[:500] if doc else None
 
-        if doc:
-            conn.execute(
-                "UPDATE symbols SET docstring = ? WHERE id = ?",
-                (doc[:500], row["id"]),
-            )
-
-        if i % _COMMIT_EVERY == 0:
-            conn.commit()
+    completed = 0
+    with ThreadPoolExecutor(max_workers=llm_workers) as ex:
+        futures = {ex.submit(_generate, row): row for row in rows}
+        for future in as_completed(futures):
+            row = futures[future]
+            symbol = row["qualified_name"] or row["name"]
+            completed += 1
+            sym_id, doc = future.result()
+            telemetry.debug("docgen symbol", progress=f"{completed}/{total}", symbol=symbol)
+            if doc:
+                conn.execute("UPDATE symbols SET docstring = ? WHERE id = ?", (doc, sym_id))
+            if completed % _COMMIT_EVERY == 0:
+                conn.commit()
 
     conn.commit()
     conn.close()

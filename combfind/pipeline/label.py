@@ -22,7 +22,7 @@ _MAX_MEMBERS = 20
 _COMMIT_EVERY = 10
 
 
-def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
+def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, llm_workers: int = 1, **_) -> None:
     if backend is None:
         if llm_model is None:
             raise ValueError("llm backend or --llm-model is required for the label stage")
@@ -40,45 +40,53 @@ def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: in
         conn.close()
         return
 
-    telemetry.info("label running", concepts=len(unlabeled))
+    telemetry.info("label running", concepts=len(unlabeled), workers=llm_workers)
     total = len(unlabeled)
 
-    for i, row in enumerate(unlabeled, 1):
-        concept_id = row["id"]
-
-        members = conn.execute(
+    concept_members = {}
+    for row in unlabeled:
+        concept_members[row["id"]] = conn.execute(
             """SELECT s.qualified_name, s.name, s.kind, s.signature, s.docstring
                FROM concept_members cm
                JOIN symbols s ON s.id = cm.symbol_id
                WHERE cm.concept_id = ?
                ORDER BY cm.distance_to_centroid
                LIMIT ?""",
-            (concept_id, _MAX_MEMBERS),
+            (row["id"], _MAX_MEMBERS),
         ).fetchall()
 
-        telemetry.debug("label concept", progress=f"{i}/{total}", concept_id=concept_id)
-        messages = _build_messages(members)
+    def _label(concept_id):
+        messages = _build_messages(concept_members[concept_id])
         text = backend.chat(messages, schema=_SCHEMA)
+        return concept_id, text
 
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            telemetry.warning("label parse error", concept_id=concept_id, progress=f"{i}/{total}")
-            continue
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    completed = 0
+    with ThreadPoolExecutor(max_workers=llm_workers) as ex:
+        futures = {ex.submit(_label, row["id"]): row["id"] for row in unlabeled}
+        for future in as_completed(futures):
+            completed += 1
+            concept_id, text = future.result()
+            telemetry.debug("label concept", progress=f"{completed}/{total}", concept_id=concept_id)
 
-        name = str(parsed.get("name", ""))[:120]
-        description = str(parsed.get("description", ""))[:500]
-        role = parsed.get("role") if parsed.get("role") in _ROLES else None
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                telemetry.warning("label parse error", concept_id=concept_id, progress=f"{completed}/{total}")
+                continue
 
-        telemetry.debug("concept labeled", progress=f"{i}/{total}", name=name, role=role)
+            name = str(parsed.get("name", ""))[:120]
+            description = str(parsed.get("description", ""))[:500]
+            role = parsed.get("role") if parsed.get("role") in _ROLES else None
 
-        conn.execute(
-            "UPDATE concepts SET name=?, description=?, role=? WHERE id=?",
-            (name, description, role, concept_id),
-        )
+            telemetry.debug("concept labeled", progress=f"{completed}/{total}", name=name, role=role)
+            conn.execute(
+                "UPDATE concepts SET name=?, description=?, role=? WHERE id=?",
+                (name, description, role, concept_id),
+            )
 
-        if i % _COMMIT_EVERY == 0:
-            conn.commit()
+            if completed % _COMMIT_EVERY == 0:
+                conn.commit()
 
     conn.commit()
     conn.close()
