@@ -44,7 +44,9 @@ def version_cmd():
               help="Re-run all stages, ignoring cache")
 @click.option("--llm-workers", default=1, show_default=True, type=int,
               help="Number of parallel LLM calls (useful for remote APIs)")
-def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, force, llm_workers):
+@click.option("--docgen", is_flag=True, default=False,
+              help="Generate LLM docstrings for undocumented symbols (slow; off by default)")
+def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, force, llm_workers, docgen):
     """Index a repository."""
     from combfind.pipeline import run as pipeline_run
     from combfind.llm import create_backend
@@ -67,6 +69,7 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
         repo_path=repo_path,
         llm_model=resolved_llm,
         force=force,
+        docgen=docgen,
         llm_workers=llm_workers,
         exclude_paths=list(exclude_paths) or None,
         exclude_regex=exclude_regex,

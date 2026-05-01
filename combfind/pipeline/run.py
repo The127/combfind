@@ -91,13 +91,14 @@ def _run_one(stage: str, db_path: str, input_hash: str, params: dict, backend=No
         raise
 
 
-def run(db_path: str, stages: list[str] | None = None, force: bool = False, backend=None, **params) -> None:
+def run(db_path: str, stages: list[str] | None = None, force: bool = False, backend=None, docgen: bool = False, **params) -> None:
     conn = get_connection(db_path)
     if force:
         conn.execute("DELETE FROM pipeline_runs")
         conn.commit()
 
-    requested = set(stages) if stages else set(_ALL_STAGES)
+    default_stages = [s for s in _ALL_STAGES if s != "docgen" or docgen]
+    requested = set(stages) if stages else set(default_stages)
 
     for group in _PLAN:
         to_run = [s for s in group if s in requested]
