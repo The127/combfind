@@ -1,6 +1,6 @@
 # combfind
 
-Give an AI agent a codebase — combfind tells it where to look.
+Give an AI agent a codebase. combfind tells it where to look.
 
 combfind builds a local index of a repository so an agent can find the right files and functions for a task with a plain-text query, without reading the entire codebase.
 
@@ -52,8 +52,8 @@ combfind query "where are database migrations" --db repo.db --format json
 | `--db` | `<repo>/.combfind.db` | Output path |
 | `--force` | off | Ignore cache, re-index from scratch |
 | `--llm-model` | auto | Path to a GGUF model file |
-| `--exclude-paths` | — | Paths to skip, relative to repo root (repeatable) |
-| `--exclude-regex` | — | Regex matched against file paths to skip |
+| `--exclude-paths` | - | Paths to skip, relative to repo root (repeatable) |
+| `--exclude-regex` | - | Regex matched against file paths to skip |
 
 ## Supported languages
 
