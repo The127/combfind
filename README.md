@@ -20,8 +20,8 @@ combfind download-model
 ## Usage
 
 ```bash
-# Index a repository
-combfind build /path/to/repo --db repo.db
+# Index a repository (requires a local LLM model)
+combfind init /path/to/repo --db repo.db
 
 # Query it
 combfind query "how does authentication work" --db repo.db
@@ -40,20 +40,27 @@ combfind query "where are database migrations" --db repo.db --format json
     "files": [{"path": "auth/service.py", "start_line": 42, "end_line": 91}],
     "symbols": ["AuthService.refresh", "AuthService.validate"],
     "why_relevant": "Handles session token validation and refresh logic.",
-    "sibling_implementations": ["MobileAuthService", "OAuthService"]
+    "sibling_implementations": []
   }
 ]
 ```
 
-### Build options
+### Init options
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--db` | `<repo>/.combfind.db` | Output path |
-| `--force` | off | Ignore cache, re-index from scratch |
-| `--llm-model` | auto | Path to a GGUF model file |
-| `--exclude-paths` | - | Paths to skip, relative to repo root (repeatable) |
+| `--db` | `<repo_path>/.combfind.db` | Output path |
+| `--llm-model` | auto-detected | Path to a GGUF model file |
+| `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
+
+### Query options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--db` | `.combfind.db` | Database to query |
+| `--top-k` | 5 | Number of results to return |
+| `--format` | `text` | Output format: `text` or `json` |
 
 ## Environment variables
 
