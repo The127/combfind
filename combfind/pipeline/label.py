@@ -1,13 +1,6 @@
 import json
 
 from combfind import telemetry
-
-try:
-    from llama_cpp import Llama, LlamaGrammar
-except ImportError:
-    Llama = None  # type: ignore[assignment,misc]
-    LlamaGrammar = None  # type: ignore[assignment,misc]
-
 from combfind.db import get_connection
 
 _ROLES = [
@@ -28,11 +21,12 @@ _SCHEMA = json.dumps({
 _MAX_MEMBERS = 20
 
 
-def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
-    if llm_model is None:
-        raise ValueError("--llm-model is required for the label stage")
-    if Llama is None:
-        raise ImportError("llama-cpp-python is required for the label stage")
+def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
+    if backend is None:
+        if llm_model is None:
+            raise ValueError("llm backend or --llm-model is required for the label stage")
+        from combfind.llm import LocalBackend
+        backend = LocalBackend(model_path=llm_model, n_ctx=llm_ctx or 2048)
 
     conn = get_connection(db_path)
 
@@ -45,9 +39,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
         conn.close()
         return
 
-    telemetry.info("label loading model", model=llm_model)
-    llm = Llama(model_path=llm_model, n_ctx=llm_ctx or 2048, verbose=False)
-    grammar = LlamaGrammar.from_json_schema(_SCHEMA)
+    telemetry.info("label running", concepts=len(unlabeled))
     total = len(unlabeled)
 
     for i, row in enumerate(unlabeled, 1):
@@ -64,8 +56,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
         ).fetchall()
 
         messages = _build_messages(members)
-        result = llm.create_chat_completion(messages, max_tokens=256, grammar=grammar)
-        text = result["choices"][0]["message"]["content"].strip()
+        text = backend.chat(messages, max_tokens=256, schema=_SCHEMA)
 
         try:
             parsed = json.loads(text)

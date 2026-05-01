@@ -6,15 +6,10 @@ combfind builds a local index of a repository so an agent can find the right fil
 
 ## Install
 
+For local LLM inference:
+
 ```bash
 pip3 install "combfind[llm]" \
-  --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-```
-
-Or with uv:
-
-```bash
-uv pip install "combfind[llm]" \
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 ```
 
@@ -24,11 +19,21 @@ Download a model (one-time, ~2 GB):
 combfind download-model
 ```
 
+For a remote OpenAI-compatible API instead:
+
+```bash
+pip3 install "combfind[openai]"
+```
+
 ## Usage
 
 ```bash
-# Index a repository (requires a local LLM model)
+# Index a repository (local LLM, auto-detected model)
 combfind init /path/to/repo --db repo.db
+
+# Index using a remote OpenAI-compatible API
+COMBFIND_LLM_API_KEY=sk-... COMBFIND_LLM_MODEL=gpt-4o-mini \
+  combfind init /path/to/repo --db repo.db --llm-mode openai
 
 # Query it
 combfind query "how does authentication work" --db repo.db
@@ -57,7 +62,8 @@ combfind query "where are database migrations" --db repo.db --format json
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--db` | `<repo_path>/.combfind.db` | Output path |
-| `--llm-model` | auto-detected | Path to a GGUF model file |
+| `--llm-model` | auto-detected | Path to a GGUF model file (local mode only) |
+| `--llm-mode` | `local` | LLM backend: `local` (llama.cpp) or `openai` (OpenAI-compatible API) |
 | `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
 
@@ -74,6 +80,9 @@ combfind query "where are database migrations" --db repo.db --format json
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
+| `COMBFIND_LLM_BASE_URL` | - | Base URL for OpenAI-compatible API (e.g. `https://api.openai.com/v1`) |
+| `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
+| `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
 
 ## Supported languages
 

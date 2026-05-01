@@ -4,20 +4,16 @@ from pathlib import Path
 from combfind import telemetry
 from combfind.db import get_connection
 
-try:
-    from llama_cpp import Llama
-except ImportError:
-    Llama = None  # type: ignore[assignment,misc]
-
 _COMMIT_EVERY = 10
 
 
-def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
-    if Llama is None:
-        raise ImportError("llama-cpp-python is required for the docgen stage")
-    if llm_model is None:
-        telemetry.debug("docgen skipped, no llm_model configured")
-        return
+def run(db_path: str, *, backend=None, llm_model: str | None = None, llm_ctx: int | None = None, **_) -> None:
+    if backend is None:
+        if llm_model is None:
+            telemetry.debug("docgen skipped, no llm backend configured")
+            return
+        from combfind.llm import LocalBackend
+        backend = LocalBackend(model_path=llm_model, n_ctx=llm_ctx or 2048)
 
     conn = get_connection(db_path)
     repo_path = _repo_path(conn)
@@ -35,8 +31,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
         conn.close()
         return
 
-    telemetry.info("docgen loading model", model=llm_model, symbols=len(rows))
-    llm = Llama(model_path=llm_model, n_ctx=llm_ctx or 2048, verbose=False)
+    telemetry.info("docgen running", symbols=len(rows))
     total = len(rows)
 
     for i, row in enumerate(rows, 1):
@@ -45,8 +40,7 @@ def run(db_path: str, *, llm_model: str | None = None, llm_ctx: int | None = Non
             continue
 
         messages = _build_messages(row, skeleton)
-        result = llm.create_chat_completion(messages, max_tokens=128)
-        doc = result["choices"][0]["message"]["content"].strip()
+        doc = backend.chat(messages, max_tokens=128)
 
         if doc:
             conn.execute(

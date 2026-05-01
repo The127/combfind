@@ -61,7 +61,7 @@ def _mark(conn, stage: str, status: str, input_hash: str | None = None, params: 
     conn.commit()
 
 
-def _run_one(stage: str, db_path: str, input_hash: str, params: dict) -> None:
+def _run_one(stage: str, db_path: str, input_hash: str, params: dict, backend=None) -> None:
     conn = get_connection(db_path)
     if _is_cached(conn, stage, input_hash):
         telemetry.debug("stage cached, skipping", stage=stage)
@@ -70,8 +70,11 @@ def _run_one(stage: str, db_path: str, input_hash: str, params: dict) -> None:
     telemetry.info("stage running", stage=stage)
     _mark(conn, stage, "running")
     conn.close()
+    kwargs = dict(params)
+    if backend is not None:
+        kwargs["backend"] = backend
     try:
-        _stage_fn(stage)(db_path, **params)
+        _stage_fn(stage)(db_path, **kwargs)
         conn = get_connection(db_path)
         _mark(conn, stage, "done", input_hash, params)
         conn.close()
@@ -88,7 +91,7 @@ def _run_one(stage: str, db_path: str, input_hash: str, params: dict) -> None:
         raise
 
 
-def run(db_path: str, stages: list[str] | None = None, force: bool = False, **params) -> None:
+def run(db_path: str, stages: list[str] | None = None, force: bool = False, backend=None, **params) -> None:
     conn = get_connection(db_path)
     if force:
         conn.execute("DELETE FROM pipeline_runs")
@@ -106,10 +109,10 @@ def run(db_path: str, stages: list[str] | None = None, force: bool = False, **pa
         conn.close()
 
         if len(to_run) == 1:
-            _run_one(to_run[0], db_path, ih, params)
+            _run_one(to_run[0], db_path, ih, params, backend=backend)
         else:
             with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_run)) as ex:
-                futures = {ex.submit(_run_one, s, db_path, ih, params): s for s in to_run}
+                futures = {ex.submit(_run_one, s, db_path, ih, params, backend): s for s in to_run}
                 for f in concurrent.futures.as_completed(futures):
                     f.result()  # re-raises on failure
 

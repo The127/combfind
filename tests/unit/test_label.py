@@ -42,31 +42,16 @@ def env(tmp_path):
     return db_path
 
 
-def _fake_llm(response: dict):
-    class FakeLlama:
-        def __init__(self, model_path, **kwargs):
-            pass
+class FakeBackend:
+    def __init__(self, response: dict | str):
+        self._response = response if isinstance(response, str) else json.dumps(response)
 
-        def create_chat_completion(self, messages, **kwargs):
-            return {"choices": [{"message": {"content": json.dumps(response)}}]}
-
-    class FakeGrammar:
-        @staticmethod
-        def from_json_schema(schema):
-            return None
-
-    return FakeLlama, FakeGrammar
+    def chat(self, messages, max_tokens, schema=None):
+        return self._response
 
 
-@pytest.fixture
-def mock_llm(monkeypatch):
-    cls, grammar = _fake_llm(_GOOD)
-    monkeypatch.setattr(label_mod, "Llama", cls)
-    monkeypatch.setattr(label_mod, "LlamaGrammar", grammar)
-
-
-def test_concept_labeled(env, mock_llm):
-    label_mod.run(env, llm_model="/fake/model.gguf")
+def test_concept_labeled(env):
+    label_mod.run(env, backend=FakeBackend(_GOOD))
     conn = get_connection(env)
     row = conn.execute("SELECT name, description, role FROM concepts LIMIT 1").fetchone()
     conn.close()
@@ -75,30 +60,26 @@ def test_concept_labeled(env, mock_llm):
     assert row["role"] == "implementation"
 
 
-def test_requires_llm_model(env, mock_llm):
-    with pytest.raises(ValueError, match="--llm-model"):
+def test_requires_llm_model(env):
+    with pytest.raises(ValueError, match="llm backend"):
         label_mod.run(env)
 
 
-def test_skips_already_labeled(env, mock_llm):
+def test_skips_already_labeled(env):
     conn = get_connection(env)
     conn.execute("UPDATE concepts SET name='Already Named'")
     conn.commit()
     conn.close()
 
-    label_mod.run(env, llm_model="/fake/model.gguf")
+    label_mod.run(env, backend=FakeBackend(_GOOD))
 
     conn = get_connection(env)
     assert conn.execute("SELECT name FROM concepts LIMIT 1").fetchone()[0] == "Already Named"
     conn.close()
 
 
-def test_invalid_role_stored_as_null(env, monkeypatch):
-    cls, grammar = _fake_llm({"name": "Foo", "description": "Does foo.", "role": "not_valid"})
-    monkeypatch.setattr(label_mod, "Llama", cls)
-    monkeypatch.setattr(label_mod, "LlamaGrammar", grammar)
-
-    label_mod.run(env, llm_model="/fake/model.gguf")
+def test_invalid_role_stored_as_null(env):
+    label_mod.run(env, backend=FakeBackend({"name": "Foo", "description": "Does foo.", "role": "not_valid"}))
 
     conn = get_connection(env)
     role = conn.execute("SELECT role FROM concepts LIMIT 1").fetchone()[0]
@@ -106,23 +87,8 @@ def test_invalid_role_stored_as_null(env, monkeypatch):
     assert role is None
 
 
-def test_malformed_json_skipped(env, monkeypatch):
-    class BadLlama:
-        def __init__(self, model_path, **kwargs):
-            pass
-
-        def create_chat_completion(self, messages, **kwargs):
-            return {"choices": [{"message": {"content": "not json at all"}}]}
-
-    class FakeGrammar:
-        @staticmethod
-        def from_json_schema(schema):
-            return None
-
-    monkeypatch.setattr(label_mod, "Llama", BadLlama)
-    monkeypatch.setattr(label_mod, "LlamaGrammar", FakeGrammar)
-
-    label_mod.run(env, llm_model="/fake/model.gguf")
+def test_malformed_json_skipped(env):
+    label_mod.run(env, backend=FakeBackend("not json at all"))
 
     conn = get_connection(env)
     name = conn.execute("SELECT name FROM concepts LIMIT 1").fetchone()[0]
