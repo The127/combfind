@@ -1,0 +1,3 @@
+Adding support for a new language. Need to find where source files are
+walked, how symbols are extracted from the AST, and where the language
+registry maps file extensions to grammars.
