@@ -6,7 +6,19 @@ import numpy as np
 try:
     import hdbscan as _hdbscan_mod
 except ImportError:
-    _hdbscan_mod = None  # type: ignore[assignment]
+    try:
+        # sklearn >= 1.3 ships HDBSCAN; wrap it to match the hdbscan package's API surface
+        from sklearn.cluster import HDBSCAN as _SklearnHDBSCAN
+
+        class _hdbscan_mod:  # type: ignore[no-redef]
+            class HDBSCAN:
+                def __init__(self, min_cluster_size: int = 5, metric: str = "euclidean", **_):
+                    self._inner = _SklearnHDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+
+                def fit_predict(self, X):
+                    return self._inner.fit_predict(X)
+    except ImportError:
+        _hdbscan_mod = None  # type: ignore[assignment]
 
 from combfind.db import get_connection
 
