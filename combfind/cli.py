@@ -1,6 +1,19 @@
+from pathlib import Path
+
 import click
 
 from combfind.db import create_schema, get_connection
+
+_MODELS_DIR = Path.home() / ".cache" / "combfind" / "models"
+_DEFAULT_REPO = "Qwen/Qwen2.5-3B-Instruct-GGUF"
+_DEFAULT_FILE = "qwen2.5-3b-instruct-q4_k_m.gguf"
+
+
+def _default_llm_model() -> str | None:
+    if not _MODELS_DIR.exists():
+        return None
+    ggufs = sorted(_MODELS_DIR.glob("*.gguf"))
+    return str(ggufs[0]) if ggufs else None
 
 
 @click.group()
@@ -35,13 +48,17 @@ def build(repo_path, db, stages, force, embed_model, llm_model, llm_ctx, cluster
     conn.close()
 
     stage_list = stages.split(",") if stages else None
+    resolved_llm = llm_model or _default_llm_model()
+    if resolved_llm and resolved_llm != llm_model:
+        click.echo(f"[combfind] using cached model: {resolved_llm}")
+
     pipeline_run.run(
         db_path,
         repo_path=repo_path,
         stages=stage_list,
         force=force,
         embed_model=embed_model,
-        llm_model=llm_model,
+        llm_model=resolved_llm,
         llm_ctx=llm_ctx,
         cluster_min_size=cluster_min_size,
         noise=noise,
@@ -125,3 +142,23 @@ def info(db_path):
             click.echo(f"  {row['key']}: {row['value']}")
 
     conn.close()
+
+
+@cli.command("download-model")
+@click.option("--repo", default=_DEFAULT_REPO, show_default=True, help="HuggingFace repo ID")
+@click.option("--file", "filename", default=_DEFAULT_FILE, show_default=True, help="GGUF filename in repo")
+@click.option("--dest", default=None, help="Destination directory (default: ~/.cache/combfind/models)")
+def download_model(repo, filename, dest):
+    """Download a GGUF model to the local cache."""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        raise click.ClickException('huggingface_hub is required: pip install "combfind[llm]"')
+
+    dest_dir = Path(dest) if dest else _MODELS_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    click.echo(f"Downloading {filename} from {repo} ...")
+    path = hf_hub_download(repo_id=repo, filename=filename, local_dir=str(dest_dir))
+    click.echo(f"Saved to: {path}")
+    click.echo("Pass to build: --llm-model {path}  (or omit — auto-detected next time)")
