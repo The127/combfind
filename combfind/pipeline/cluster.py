@@ -1,71 +1,58 @@
 import json
 from collections import defaultdict
+from pathlib import Path
 
 from combfind import telemetry
 
 import numpy as np
 
-try:
-    import hdbscan as _hdbscan_mod
-except ImportError:
-    try:
-        # sklearn >= 1.3 ships HDBSCAN; wrap it to match the hdbscan package's API surface
-        from sklearn.cluster import HDBSCAN as _SklearnHDBSCAN
-
-        class _hdbscan_mod:  # type: ignore[no-redef]
-            class HDBSCAN:
-                def __init__(self, min_cluster_size: int = 5, metric: str = "euclidean", **_):
-                    self._inner = _SklearnHDBSCAN(min_cluster_size=min_cluster_size, metric=metric, copy=False)
-
-                def fit_predict(self, X):
-                    return self._inner.fit_predict(X)
-    except ImportError:
-        _hdbscan_mod = None  # type: ignore[assignment]
-
 from combfind.db import get_connection
 
+_TARGET_CONCEPT_SIZE = 20  # aim for ~this many symbols per concept
 
-def run(db_path: str, *, cluster_min_size: int | None = None, noise: str = "singleton", **_) -> None:
-    if _hdbscan_mod is None:
-        raise ImportError("hdbscan is required for the cluster stage")
 
+def run(db_path: str, *, noise: str = "singleton", **_) -> None:
     conn = get_connection(db_path)
 
-    rows = conn.execute("SELECT symbol_id, embedding FROM symbol_embeddings").fetchall()
+    rows = conn.execute(
+        """SELECT se.symbol_id, se.embedding, f.path
+           FROM symbol_embeddings se
+           JOIN symbols s ON s.id = se.symbol_id
+           JOIN files f ON f.id = s.file_id"""
+    ).fetchall()
+
     if not rows:
         raise RuntimeError("cluster requires symbol_embeddings — run embed first")
 
-    symbol_ids = [r["symbol_id"] for r in rows]
-    embeddings = np.array(
-        [np.frombuffer(r["embedding"], dtype=np.float32) for r in rows]
-    )
-
-    n = len(symbol_ids)
-    min_size = int(cluster_min_size) if cluster_min_size is not None else 5
-
-    clusterer = _hdbscan_mod.HDBSCAN(min_cluster_size=min_size, metric="euclidean")
-    labels = clusterer.fit_predict(embeddings)
+    # group by package (parent directory of file)
+    packages: dict[str, list] = defaultdict(list)
+    for row in rows:
+        pkg = str(Path(row["path"]).parent)
+        packages[pkg].append(row)
 
     conn.execute("DELETE FROM concepts")
     conn.execute("DELETE FROM concept_members")
 
-    clusters: dict[int, list[int]] = defaultdict(list)
-    for idx, label in enumerate(labels.tolist()):
-        clusters[label].append(idx)
+    total_concepts = 0
+    for pkg, pkg_rows in sorted(packages.items()):
+        symbol_ids = [r["symbol_id"] for r in pkg_rows]
+        embeddings = np.array(
+            [np.frombuffer(r["embedding"], dtype=np.float32) for r in pkg_rows]
+        )
 
-    for label in sorted(k for k in clusters if k >= 0):
-        _insert_concept(conn, symbol_ids, embeddings, clusters[label])
+        k = max(1, round(len(pkg_rows) / _TARGET_CONCEPT_SIZE))
+        if k == 1:
+            _insert_concept(conn, symbol_ids, embeddings, list(range(len(pkg_rows))))
+            total_concepts += 1
+        else:
+            labels = _kmeans(embeddings, k)
+            for label in range(k):
+                indices = [i for i, l in enumerate(labels) if l == label]
+                if indices:
+                    _insert_concept(conn, symbol_ids, embeddings, indices)
+                    total_concepts += 1
 
-    noise_indices = clusters.get(-1, [])
-    if noise_indices:
-        if noise == "singleton":
-            for idx in noise_indices:
-                _insert_concept(conn, symbol_ids, embeddings, [idx])
-        elif noise == "merge":
-            _insert_concept(conn, symbol_ids, embeddings, noise_indices, name="uncategorized")
-        # "drop": do nothing
-
-    for key, val in (("noise_strategy", noise), ("cluster_min_size", min_size)):
+    for key, val in (("noise_strategy", noise), ("cluster_min_size", _TARGET_CONCEPT_SIZE)):
         conn.execute(
             "INSERT OR REPLACE INTO build_config(key, value) VALUES (?,?)",
             (key, json.dumps(val)),
@@ -73,9 +60,17 @@ def run(db_path: str, *, cluster_min_size: int | None = None, noise: str = "sing
 
     conn.commit()
     conn.close()
+    telemetry.info("cluster complete", concepts=total_concepts, packages=len(packages))
 
-    n_real = sum(1 for k in clusters if k >= 0)
-    telemetry.info("cluster complete", clusters=n_real, noise=len(noise_indices), noise_strategy=noise)
+
+def _kmeans(embeddings: np.ndarray, k: int) -> np.ndarray:
+    try:
+        from sklearn.cluster import KMeans
+        km = KMeans(n_clusters=k, n_init=3, random_state=42)
+        return km.fit_predict(embeddings)
+    except ImportError:
+        # fallback: assign round-robin if sklearn unavailable (shouldn't happen)
+        return np.array([i % k for i in range(len(embeddings))])
 
 
 def _insert_concept(conn, symbol_ids: list, embeddings: np.ndarray, indices: list, *, name: str | None = None) -> None:
