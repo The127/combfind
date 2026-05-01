@@ -94,3 +94,39 @@ def test_malformed_json_skipped(env):
     name = conn.execute("SELECT name FROM concepts LIMIT 1").fetchone()[0]
     conn.close()
     assert name is None  # concept left unlabeled, not crashed
+
+
+def test_parallel_workers_label_all_concepts(tmp_path):
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+
+    conn.execute(
+        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('a.py','python','h',10)"
+    )
+    file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    for c in range(3):
+        conn.execute(
+            "INSERT INTO symbols(file_id, name, kind, start_line, end_line) VALUES (?,?,?,?,?)",
+            (file_id, f"sym_{c}", "function", c + 1, c + 1),
+        )
+        sym_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO concepts(member_count, centroid) VALUES (1, ?)", (b"\x00" * 16,)
+        )
+        concept_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) VALUES (?,?,?)",
+            (concept_id, sym_id, 0.0),
+        )
+
+    conn.commit()
+    conn.close()
+
+    label_mod.run(db_path, backend=FakeBackend(_GOOD), llm_workers=3)
+
+    conn = get_connection(db_path)
+    unlabeled = conn.execute("SELECT COUNT(*) FROM concepts WHERE name IS NULL").fetchone()[0]
+    conn.close()
+    assert unlabeled == 0

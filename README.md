@@ -104,6 +104,8 @@ concept siblings (1):
 | `--llm-mode` | `local` | LLM backend: `local` (llama.cpp) or `openai` (OpenAI-compatible API) |
 | `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
+| `--llm-workers` | `1` | Parallel LLM calls (useful with `--llm-mode openai`) |
+| `--force` | off | Re-run all stages, ignoring the cache |
 
 ### Query options
 
