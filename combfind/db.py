@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     name           TEXT NOT NULL,
     qualified_name TEXT,
     kind           TEXT NOT NULL CHECK(kind IN (
-                       'function','class','method','interface',
+                       'function','class','method','interface','struct',
                        'constructor','property','enum','type_alias','module'
                    )),
     signature      TEXT,

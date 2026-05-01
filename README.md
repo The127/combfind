@@ -57,4 +57,4 @@ combfind query "where are database migrations" --db repo.db --format json
 
 ## Supported languages
 
-Python. More languages can be added via tree-sitter grammars.
+Python, Go. More languages can be added via tree-sitter grammars.

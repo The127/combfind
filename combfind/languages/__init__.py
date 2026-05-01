@@ -14,4 +14,9 @@ LANGUAGES: dict[str, LanguageDef] = {
         grammar="tree_sitter_python",
         scip_binary="scip-python",
     ),
+    "go": LanguageDef(
+        extensions=[".go"],
+        grammar="tree_sitter_go",
+        scip_binary="scip-go",
+    ),
 }
