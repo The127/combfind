@@ -1,16 +1,13 @@
-name: Release
+name: CI / Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [master]
 
 jobs:
-  publish:
+  test:
+    if: "!startsWith(github.event.head_commit.message, 'release: v')"
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # required for trusted publishing
-
     steps:
       - uses: actions/checkout@v4
 
@@ -18,11 +15,53 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build
-        run: pip install build
+      - name: Install
+        run: pip install -e ".[dev]" tree-sitter-go
+
+      - name: Test
+        run: pytest
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          python3 - <<'EOF'
+          import re, pathlib
+          text = pathlib.Path("pyproject.toml").read_text()
+          m = re.search(r'version = "(\d+\.\d+\.)(\d+)"', text)
+          new_version = m.group(1) + str(int(m.group(2)) + 1)
+          pathlib.Path("pyproject.toml").write_text(
+              text[:m.start()] + f'version = "{new_version}"' + text[m.end():]
+          )
+          print(new_version)
+          EOF
+          echo "version=$(python3 -c "import re; print(re.search(r'version = \"([^\"]+)\"', open('pyproject.toml').read()).group(1))")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "release: v${{ steps.bump.outputs.version }}"
+          git push
 
       - name: Build
-        run: python -m build
+        run: pip install build && python -m build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
