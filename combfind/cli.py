@@ -80,6 +80,28 @@ def query_cmd(text, db, top_k, fmt):
     query_mod.print_results(results, fmt=fmt)
 
 
+@cli.command("inspect")
+@click.argument("qualified_name")
+@click.option("--db", default=".combfind.db", show_default=True)
+@click.option("--format", "fmt", default="text", show_default=True,
+              type=click.Choice(["text", "json"]))
+def inspect_cmd(qualified_name, db, fmt):
+    """Inspect a symbol: callers, callees, concept, siblings."""
+    from combfind.inspect import inspect_symbol, find_candidates, print_inspect
+
+    result = inspect_symbol(qualified_name, db_path=db)
+    if result is None:
+        candidates = find_candidates(qualified_name, db_path=db)
+        if candidates:
+            raise click.ClickException(
+                f"no exact match for {qualified_name!r}; did you mean:\n"
+                + "\n".join(f"  {c}" for c in candidates)
+            )
+        raise click.ClickException(f"symbol not found: {qualified_name!r}")
+
+    print_inspect(result, fmt=fmt)
+
+
 @cli.command("download-model")
 @click.option("--repo", default=_DEFAULT_REPO, show_default=True)
 @click.option("--file", "filename", default=_DEFAULT_FILE, show_default=True)

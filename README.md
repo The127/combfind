@@ -38,6 +38,20 @@ COMBFIND_LLM_API_KEY=sk-... COMBFIND_LLM_MODEL=gpt-4o-mini \
 # Query it
 combfind query "how does authentication work" --db repo.db
 combfind query "where are database migrations" --db repo.db --format json
+
+# Inspect a symbol returned by a query
+combfind inspect auth.service.AuthService --db repo.db
+combfind inspect auth.service.AuthService --db repo.db --format json
+```
+
+### Query output (text)
+
+```
+[1] Token Refresh (implementation) — 0.87
+    why: Handles session token validation and refresh logic.
+    auth/service.py
+      auth.service.AuthService.refresh  :42-67
+      auth.service.AuthService.validate  :70-91
 ```
 
 ### Query output (JSON)
@@ -49,12 +63,36 @@ combfind query "where are database migrations" --db repo.db --format json
     "concept": "Token Refresh",
     "role": "implementation",
     "score": 0.87,
-    "files": [{"path": "auth/service.py", "start_line": 42, "end_line": 91}],
-    "symbols": ["AuthService.refresh", "AuthService.validate"],
+    "files": [
+      {
+        "path": "auth/service.py",
+        "symbols": [
+          {"name": "refresh", "qualified_name": "auth.service.AuthService.refresh", "start_line": 42, "end_line": 67},
+          {"name": "validate", "qualified_name": "auth.service.AuthService.validate", "start_line": 70, "end_line": 91}
+        ]
+      }
+    ],
     "why_relevant": "Handles session token validation and refresh logic.",
     "sibling_implementations": []
   }
 ]
+```
+
+### Inspect output (text)
+
+```
+auth.service.AuthService  (class, auth/service.py:10-80)
+concept:  Token Refresh  [implementation]
+sig:      class AuthService
+
+callers (1):
+  auth.mock.MockAuthService  auth/mock.py:5
+
+callees (1):
+  auth.service.AuthService.validate  auth/service.py:20
+
+concept siblings (1):
+  auth.service.AuthService.validate  [method]  auth/service.py
 ```
 
 ### Init options
@@ -73,6 +111,13 @@ combfind query "where are database migrations" --db repo.db --format json
 |------|---------|-------------|
 | `--db` | `.combfind.db` | Database to query |
 | `--top-k` | 5 | Number of results to return |
+| `--format` | `text` | Output format: `text` or `json` |
+
+### Inspect options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--db` | `.combfind.db` | Database to query |
 | `--format` | `text` | Output format: `text` or `json` |
 
 ## Environment variables
