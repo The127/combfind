@@ -30,9 +30,8 @@ class Handler(Protocol):
 class ConsoleHandler:
     def handle(self, event: Event) -> None:
         ts = event.timestamp.strftime("%H:%M:%S")
-        prefix = "" if event.level in (Level.INFO, Level.DEBUG) else f"{event.level.value.upper()} "
         kv = "  ".join(f"{k}={v}" for k, v in event.data.items())
-        line = f"{ts} [combfind] {prefix}{event.msg}"
+        line = f"{ts} [combfind] {event.level.value.upper():<8} {event.msg}"
         if kv:
             line += f"  {kv}"
         print(line)
