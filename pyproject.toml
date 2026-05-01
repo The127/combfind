@@ -5,7 +5,18 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "combfind"
 version = "0.1.0"
+description = "Queryable concept map of a codebase for LLM coding agents"
+readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.10"
+authors = [{ email = "karolinkostial@gmail.com" }]
+keywords = ["llm", "code-search", "embeddings", "tree-sitter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
 dependencies = [
     "click>=8.1",
     "hdbscan>=0.8",
