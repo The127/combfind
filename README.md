@@ -135,6 +135,7 @@ concept siblings (1):
 | `COMBFIND_LLM_BASE_URL` | - | Base URL for OpenAI-compatible API (e.g. `https://api.openai.com/v1`) |
 | `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
 | `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
+| `HF_HUB_OFFLINE` | - | Set to `1` to skip HuggingFace network checks and use cached embedding models only |
 
 ## Using a remote LLM API
 
