@@ -6,8 +6,8 @@ import click
 from combfind.db import create_schema, get_connection
 
 _MODELS_DIR = Path.home() / ".cache" / "combfind" / "models"
-_DEFAULT_REPO = "Qwen/Qwen2.5-3B-Instruct-GGUF"
-_DEFAULT_FILE = "qwen2.5-3b-instruct-q4_k_m.gguf"
+_DEFAULT_REPO = "Qwen/Qwen2.5-Coder-3B-Instruct-GGUF"
+_DEFAULT_FILE = "qwen2.5-coder-3b-instruct-q6_k.gguf"
 
 
 def _default_llm_model() -> str | None:
@@ -32,7 +32,8 @@ def version_cmd():
 @cli.command("init")
 @click.argument("repo_path", default=".", required=False)
 @click.option("--db", default=None, help="Database path (default: <repo_path>/.combfind.db)")
-@click.option("--llm-model", default=None, help="Path to GGUF model file (auto-detected if omitted)")
+@click.option("--llm-model", default=None, envvar="COMBFIND_MODEL", show_envvar=True,
+              help="Path to GGUF model file (auto-detected if omitted)")
 @click.option("--llm-mode", default="local", show_default=True,
               type=click.Choice(["local", "openai", "mlx"]),
               help="LLM backend: local (llama.cpp), openai (OpenAI-compatible API), or mlx (Apple Silicon)")
@@ -92,7 +93,9 @@ def init_cmd(repo_path, db, llm_model, llm_mode, exclude_paths, exclude_regex, f
               help="Max iterations for --agentic mode")
 @click.option("--llm-mode", default=None, type=click.Choice(["local", "openai", "mlx"]),
               help="LLM backend for reranking or agentic mode")
-def query_cmd(text, db, top_k, fmt, rerank, agentic, agentic_limit, llm_mode):
+@click.option("--llm-model", default=None, envvar="COMBFIND_MODEL", show_envvar=True,
+              help="Path to GGUF model file (auto-detected if omitted)")
+def query_cmd(text, db, top_k, fmt, rerank, agentic, agentic_limit, llm_mode, llm_model):
     """Query the index with free text."""
     from combfind import query as query_mod
 
@@ -101,7 +104,7 @@ def query_cmd(text, db, top_k, fmt, rerank, agentic, agentic_limit, llm_mode):
         if llm_mode is None:
             raise click.ClickException("--rerank and --agentic require --llm-mode")
         from combfind.llm import create_backend
-        backend = create_backend(llm_mode, llm_model=_default_llm_model())
+        backend = create_backend(llm_mode, llm_model=llm_model or _default_llm_model())
 
     if agentic:
         results = query_mod.agentic_query(text, db_path=db, top_k=top_k, backend=backend, max_iterations=agentic_limit)
