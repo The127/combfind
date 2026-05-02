@@ -173,7 +173,7 @@ Initial index builds in ~5 minutes. Query time is around 7 seconds, most of whic
 
 **Incremental reindexing is fast.** When a handful of files change, re-running `init` takes around 30 seconds; only the stages affected by changed files are re-executed. The index is also crash-safe: progress is committed to SQLite in batches within each stage, so if a run is interrupted it picks up close to where it left off rather than starting over.
 
-The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 hand-picked bug fixes from that codebase (n=10, single repo). That puts it above dense retrieval baselines like BM25 and E5-large (NDCG ~0.57-0.59 per [Practical Code RAG at Scale, 2025](https://arxiv.org/abs/2510.20609)), with no API costs. The state of the art (Agentless with frontier models) reaches ~90% recall@5, but requires expensive multi-step LLM pipelines per query. combfind trades some accuracy for being fast, cheap, and fully local.
+The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 hand-picked bug fixes from that codebase (n=10, single repo). No API costs, no multi-step LLM pipelines, runs fully local.
 
 ## How to query well
 
