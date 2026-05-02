@@ -181,7 +181,7 @@ When an agent receives a bug ticket, the right move is to translate the symptom 
 
 ## Supported languages
 
-Python, Go, Java, Gleam.
+Python, Go, Java, Gleam, Erlang.
 
 ## Optional SCIP tools
 

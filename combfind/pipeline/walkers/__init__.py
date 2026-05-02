@@ -1,5 +1,6 @@
 from typing import Protocol
 
+from combfind.pipeline.walkers.erlang import ErlangWalker
 from combfind.pipeline.walkers.gleam import GleamWalker
 from combfind.pipeline.walkers.go import GoWalker
 from combfind.pipeline.walkers.java import JavaWalker
@@ -17,6 +18,7 @@ _REGISTRY: dict[str, Walker] = {
     "go": GoWalker(),
     "java": JavaWalker(),
     "gleam": GleamWalker(),
+    "erlang": ErlangWalker(),
 }
 
 

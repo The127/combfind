@@ -31,4 +31,10 @@ LANGUAGES: dict[str, LanguageDef] = {
         scip_binary="",
         pack_name="gleam",
     ),
+    "erlang": LanguageDef(
+        extensions=[".erl", ".hrl"],
+        grammar="",
+        scip_binary="",
+        pack_name="erlang",
+    ),
 }
