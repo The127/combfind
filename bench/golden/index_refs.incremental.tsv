@@ -1,0 +1,4 @@
+com.example.tasks.queue.ConcurrentQueue	com.example.tasks.queue.Queue	inherit
+com.example.tasks.queue.PriorityQueue	com.example.tasks.queue.Queue	inherit
+com.example.tasks.store.FileStore	com.example.tasks.store.Store	inherit
+com.example.tasks.store.MemoryStore	com.example.tasks.store.Store	inherit
