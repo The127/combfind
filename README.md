@@ -55,6 +55,10 @@ combfind query "where are database migrations" --db repo.db --format json
 # Inspect a symbol returned by a query
 combfind inspect auth.service.AuthService --db repo.db
 combfind inspect auth.service.AuthService --db repo.db --format json
+
+# Inspect multiple symbols at once
+combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db
+combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db --format json
 ```
 
 ### Query output (text)

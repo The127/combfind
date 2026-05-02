@@ -198,7 +198,7 @@ def query_cmd(
 
 
 @cli.command("inspect")
-@click.argument("qualified_name")
+@click.argument("qualified_names", nargs=-1, required=True)
 @click.option("--db", default=".combfind.db", show_default=True)
 @click.option(
     "--format",
@@ -207,21 +207,32 @@ def query_cmd(
     show_default=True,
     type=click.Choice(["text", "json"]),
 )
-def inspect_cmd(qualified_name, db, fmt):
-    """Inspect a symbol: callers, callees, concept, siblings."""
+def inspect_cmd(qualified_names, db, fmt):
+    """Inspect one or more symbols: callers, callees, concept, siblings."""
+    import json as _json
+
     from combfind.inspect import find_candidates, inspect_symbol, print_inspect
 
-    result = inspect_symbol(qualified_name, db_path=db)
-    if result is None:
-        candidates = find_candidates(qualified_name, db_path=db)
-        if candidates:
-            raise click.ClickException(
-                f"no exact match for {qualified_name!r}; did you mean:\n"
-                + "\n".join(f"  {c}" for c in candidates)
-            )
-        raise click.ClickException(f"symbol not found: {qualified_name!r}")
+    results = []
+    for name in qualified_names:
+        result = inspect_symbol(name, db_path=db)
+        if result is None:
+            candidates = find_candidates(name, db_path=db)
+            if candidates:
+                raise click.ClickException(
+                    f"no exact match for {name!r}; did you mean:\n"
+                    + "\n".join(f"  {c}" for c in candidates)
+                )
+            raise click.ClickException(f"symbol not found: {name!r}")
+        results.append(result)
 
-    print_inspect(result, fmt=fmt)
+    if fmt == "json":
+        print(_json.dumps(results, indent=2))
+    else:
+        for i, result in enumerate(results):
+            if i > 0:
+                print()
+            print_inspect(result, fmt="text")
 
 
 @cli.command("download-model")

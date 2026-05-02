@@ -2,8 +2,10 @@ import json
 
 import numpy as np
 import pytest
+from click.testing import CliRunner
 
 import combfind.inspect as inspect_mod
+from combfind.cli import cli
 from combfind.db import create_schema, get_connection
 
 EMB_0 = np.array([1, 0, 0, 0], dtype=np.float32)
@@ -195,3 +197,43 @@ def test_print_json_format(env, capsys):
     assert isinstance(parsed["callers"], list)
     assert isinstance(parsed["callees"], list)
     assert isinstance(parsed["concept_siblings"], list)
+
+
+def test_cli_multi_symbol_text(env):
+    runner = CliRunner()
+    result = runner.invoke(cli, [
+        "inspect",
+        "auth.service.AuthService",
+        "auth.service.AuthService.validate",
+        "--db", env["db_path"],
+    ])
+    assert result.exit_code == 0
+    assert "auth.service.AuthService" in result.output
+    assert "auth.service.AuthService.validate" in result.output
+
+
+def test_cli_multi_symbol_json(env):
+    runner = CliRunner()
+    result = runner.invoke(cli, [
+        "inspect",
+        "auth.service.AuthService",
+        "auth.service.AuthService.validate",
+        "--db", env["db_path"],
+        "--format", "json",
+    ])
+    assert result.exit_code == 0
+    parsed = json.loads(result.output)
+    assert isinstance(parsed, list)
+    assert len(parsed) == 2
+    symbols = [r["symbol"] for r in parsed]
+    assert "auth.service.AuthService" in symbols
+    assert "auth.service.AuthService.validate" in symbols
+
+
+def test_cli_unknown_symbol_error(env):
+    runner = CliRunner()
+    result = runner.invoke(cli, [
+        "inspect", "does.not.Exist", "--db", env["db_path"],
+    ])
+    assert result.exit_code != 0
+    assert "not found" in result.output
