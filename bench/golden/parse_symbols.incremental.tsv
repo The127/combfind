@@ -100,7 +100,7 @@ src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.pad	String 
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math	class Math	class	35301038ec2e135d9f8c05708a6cb27cfbea59a652e1931f9ccb3d92d22a02a5
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.Math	Math()	constructor	d97f24f3c9751c286aad0e428b3585ea0973f223c230338cddef4b7ce729aed8
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	double add(double a, double b)	method	804f3ec314d2d53ea3686ce004b1178aaf62d6e3a0b339a2bd129428e996bfe6
-src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	int add(int a, int b)	method	4e0336e5bf5d6aab081c99c03bd8b5b5994fa2c7d0667d0750805c791168919f
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	int add(int a, int b)	method	50ec7416369f8c45bf36377d3f8bc2875e9be4fffad1bbbdbcafc508cc5a53bb
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	int add(int a, int b, int c)	method	c9239f17e3d74e80e0e93cac2fc7a1b23fe97299b43e65344f5286d385778c93
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	long add(long a, long b)	method	e619e076642dd79aedbe6dcc2345dda05d2a9cb898b46561448d987e9e7aa9b1
 src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.max	double max(double a, double b)	method	cb539eb8f460c5e0bd7760fe64b71ae93e1a5f76f5412bb1fba9272e71a65943
