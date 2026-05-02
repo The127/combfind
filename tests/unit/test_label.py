@@ -5,7 +5,11 @@ import pytest
 import combfind.pipeline.label as label_mod
 from combfind.db import create_schema, get_connection
 
-_GOOD = {"name": "Auth Service", "description": "Handles user authentication.", "role": "implementation"}
+_GOOD = {
+    "name": "Auth Service",
+    "description": "Handles user authentication.",
+    "role": "implementation",
+}
 
 
 @pytest.fixture
@@ -15,15 +19,25 @@ def env(tmp_path):
     create_schema(conn)
 
     conn.execute(
-        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('a.py','python','h',10)"
+        "INSERT INTO files(path, language, content_hash, size_bytes) "
+        "VALUES ('a.py','python','h',10)"
     )
     file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     for i in range(3):
         conn.execute(
-            "INSERT INTO symbols(file_id, name, kind, signature, start_line, end_line, docstring)"
-            " VALUES (?,?,?,?,?,?,?)",
-            (file_id, f"sym_{i}", "function", f"def sym_{i}()", i * 2 + 1, i * 2 + 2, f"Does {i}."),
+            "INSERT INTO symbols"
+            "(file_id, name, kind, signature, start_line, end_line, docstring) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (
+                file_id,
+                f"sym_{i}",
+                "function",
+                f"def sym_{i}()",
+                i * 2 + 1,
+                i * 2 + 2,
+                f"Does {i}.",
+            ),
         )
 
     conn.execute(
@@ -33,7 +47,8 @@ def env(tmp_path):
 
     for (sym_id,) in conn.execute("SELECT id FROM symbols").fetchall():
         conn.execute(
-            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) VALUES (?,?,?)",
+            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) "
+            "VALUES (?,?,?)",
             (concept_id, sym_id, 0.1),
         )
 
@@ -53,7 +68,9 @@ class FakeBackend:
 def test_concept_labeled(env):
     label_mod.run(env, backend=FakeBackend(_GOOD))
     conn = get_connection(env)
-    row = conn.execute("SELECT name, description, role FROM concepts LIMIT 1").fetchone()
+    row = conn.execute(
+        "SELECT name, description, role FROM concepts LIMIT 1"
+    ).fetchone()
     conn.close()
     assert row["name"] == "Auth Service"
     assert row["description"] == "Handles user authentication."
@@ -74,12 +91,20 @@ def test_skips_already_labeled(env):
     label_mod.run(env, backend=FakeBackend(_GOOD))
 
     conn = get_connection(env)
-    assert conn.execute("SELECT name FROM concepts LIMIT 1").fetchone()[0] == "Already Named"
+    assert (
+        conn.execute("SELECT name FROM concepts LIMIT 1").fetchone()[0]
+        == "Already Named"
+    )
     conn.close()
 
 
 def test_invalid_role_stored_as_null(env):
-    label_mod.run(env, backend=FakeBackend({"name": "Foo", "description": "Does foo.", "role": "not_valid"}))
+    label_mod.run(
+        env,
+        backend=FakeBackend(
+            {"name": "Foo", "description": "Does foo.", "role": "not_valid"}
+        ),
+    )
 
     conn = get_connection(env)
     role = conn.execute("SELECT role FROM concepts LIMIT 1").fetchone()[0]
@@ -102,22 +127,26 @@ def test_parallel_workers_label_all_concepts(tmp_path):
     create_schema(conn)
 
     conn.execute(
-        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('a.py','python','h',10)"
+        "INSERT INTO files(path, language, content_hash, size_bytes) "
+        "VALUES ('a.py','python','h',10)"
     )
     file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     for c in range(3):
         conn.execute(
-            "INSERT INTO symbols(file_id, name, kind, start_line, end_line) VALUES (?,?,?,?,?)",
+            "INSERT INTO symbols(file_id, name, kind, start_line, end_line) "
+            "VALUES (?,?,?,?,?)",
             (file_id, f"sym_{c}", "function", c + 1, c + 1),
         )
         sym_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute(
-            "INSERT INTO concepts(member_count, centroid) VALUES (1, ?)", (b"\x00" * 16,)
+            "INSERT INTO concepts(member_count, centroid) VALUES (1, ?)",
+            (b"\x00" * 16,),
         )
         concept_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute(
-            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) VALUES (?,?,?)",
+            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) "
+            "VALUES (?,?,?)",
             (concept_id, sym_id, 0.0),
         )
 
@@ -127,6 +156,8 @@ def test_parallel_workers_label_all_concepts(tmp_path):
     label_mod.run(db_path, backend=FakeBackend(_GOOD), llm_workers=3)
 
     conn = get_connection(db_path)
-    unlabeled = conn.execute("SELECT COUNT(*) FROM concepts WHERE name IS NULL").fetchone()[0]
+    unlabeled = conn.execute(
+        "SELECT COUNT(*) FROM concepts WHERE name IS NULL"
+    ).fetchone()[0]
     conn.close()
     assert unlabeled == 0

@@ -25,13 +25,13 @@ class Labrador(Dog):
     pass
 '''
 
-NO_BASES = '''\
+NO_BASES = """\
 class Standalone:
     pass
 
 class AlsoStandalone:
     pass
-'''
+"""
 
 
 @pytest.fixture
@@ -50,10 +50,10 @@ def env(tmp_path):
 def _refs(db_path):
     conn = get_connection(db_path)
     rows = conn.execute(
-        'SELECT s1.name src, s2.name dst, r.kind '
+        "SELECT s1.name src, s2.name dst, r.kind "
         'FROM "references" r '
-        'JOIN symbols s1 ON s1.id = r.src_symbol_id '
-        'JOIN symbols s2 ON s2.id = r.dst_symbol_id'
+        "JOIN symbols s1 ON s1.id = r.src_symbol_id "
+        "JOIN symbols s2 ON s2.id = r.dst_symbol_id"
     ).fetchall()
     conn.close()
     return {(r["src"], r["dst"], r["kind"]) for r in rows}

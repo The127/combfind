@@ -2,10 +2,9 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from combfind import telemetry
-
 import numpy as np
 
+from combfind import telemetry
 from combfind.db import get_connection
 
 _TARGET_CONCEPT_SIZE = 20  # aim for ~this many symbols per concept
@@ -47,13 +46,16 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
             total_concepts += 1
         else:
             labels = _kmeans(embeddings, k)
-            for label in range(k):
-                indices = [i for i, l in enumerate(labels) if l == label]
+            for cluster_id in range(k):
+                indices = [i for i, label in enumerate(labels) if label == cluster_id]
                 if indices:
                     _insert_concept(conn, symbol_ids, embeddings, indices)
                     total_concepts += 1
 
-    for key, val in (("noise_strategy", noise), ("cluster_min_size", _TARGET_CONCEPT_SIZE)):
+    for key, val in (
+        ("noise_strategy", noise),
+        ("cluster_min_size", _TARGET_CONCEPT_SIZE),
+    ):
         conn.execute(
             "INSERT OR REPLACE INTO build_config(key, value) VALUES (?,?)",
             (key, json.dumps(val)),
@@ -67,6 +69,7 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
 def _kmeans(embeddings: np.ndarray, k: int) -> np.ndarray:
     try:
         from sklearn.cluster import KMeans
+
         km = KMeans(n_clusters=k, n_init=3, random_state=42)
         return km.fit_predict(embeddings)
     except ImportError:
@@ -74,7 +77,14 @@ def _kmeans(embeddings: np.ndarray, k: int) -> np.ndarray:
         return np.array([i % k for i in range(len(embeddings))])
 
 
-def _insert_concept(conn, symbol_ids: list, embeddings: np.ndarray, indices: list, *, name: str | None = None) -> None:
+def _insert_concept(
+    conn,
+    symbol_ids: list,
+    embeddings: np.ndarray,
+    indices: list,
+    *,
+    name: str | None = None,
+) -> None:
     member_embs = embeddings[indices]
     centroid = member_embs.mean(axis=0).astype(np.float32)
 
@@ -87,6 +97,7 @@ def _insert_concept(conn, symbol_ids: list, embeddings: np.ndarray, indices: lis
     for idx in indices:
         dist = float(np.linalg.norm(embeddings[idx] - centroid))
         conn.execute(
-            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) VALUES (?,?,?)",
+            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) "
+            "VALUES (?,?,?)",
             (concept_id, symbol_ids[idx], dist),
         )

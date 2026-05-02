@@ -72,7 +72,10 @@ def test_build_config_written(env, mock_model):
     embed_mod.run(db_path, embed_model="fake-model")
 
     conn = get_connection(db_path)
-    cfg = {r["key"]: json.loads(r["value"]) for r in conn.execute("SELECT key, value FROM build_config").fetchall()}
+    cfg = {
+        r["key"]: json.loads(r["value"])
+        for r in conn.execute("SELECT key, value FROM build_config").fetchall()
+    }
     conn.close()
 
     assert cfg["embed_model"] == "fake-model"
@@ -94,6 +97,7 @@ def test_skips_already_embedded(env, mock_model):
             return super().encode(texts, **kwargs)
 
     import combfind.pipeline.embed as em2
+
     em2.SentenceTransformer = TrackingModel
     em2.run(db_path, embed_model="fake-model")
     em2.SentenceTransformer = original_cls

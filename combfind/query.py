@@ -57,13 +57,19 @@ def query(
 
     telemetry.debug("query embed done", concepts=len(concept_ids), fetch_k=fetch_k)
     for cid, score in candidates:
-        telemetry.debug("query candidate", score=round(score, 3), concept=concept_meta[cid]["name"])
+        telemetry.debug(
+            "query candidate", score=round(score, 3), concept=concept_meta[cid]["name"]
+        )
 
     if rerank and backend is not None:
         telemetry.debug("query reranking", candidates=len(candidates))
         candidates = _rerank(candidates, concept_meta, text, backend)
         for cid, score in candidates[:top_k]:
-            telemetry.debug("query reranked", score=round(score, 3), concept=concept_meta[cid]["name"])
+            telemetry.debug(
+                "query reranked",
+                score=round(score, 3),
+                concept=concept_meta[cid]["name"],
+            )
 
     results = [
         _expand(conn, concept_id, score, concept_meta[concept_id], rank)
@@ -105,6 +111,7 @@ def print_results(results: list[dict], *, fmt: str = "text") -> None:
 # internals
 # ---------------------------------------------------------------------------
 
+
 def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
     members = conn.execute(
         """SELECT s.id, s.qualified_name, s.start_line, s.end_line, f.path
@@ -121,12 +128,16 @@ def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
         p = m["path"]
         if p not in files_by_path:
             files_by_path[p] = {"path": p, "symbols": []}
-        files_by_path[p]["symbols"].append({
-            "name": m["qualified_name"].split(".")[-1] if m["qualified_name"] else "",
-            "qualified_name": m["qualified_name"] or "",
-            "start_line": m["start_line"],
-            "end_line": m["end_line"],
-        })
+        files_by_path[p]["symbols"].append(
+            {
+                "name": m["qualified_name"].split(".")[-1]
+                if m["qualified_name"]
+                else "",
+                "qualified_name": m["qualified_name"] or "",
+                "start_line": m["start_line"],
+                "end_line": m["end_line"],
+            }
+        )
 
     symbol_ids = [m["id"] for m in members]
     siblings: list[dict] = []
@@ -135,13 +146,13 @@ def _expand(conn, concept_id: int, score: float, meta: dict, rank: int) -> dict:
         ph = ",".join("?" * len(symbol_ids))
         # Siblings: classes that inherit FROM any member of this concept
         sibling_rows = conn.execute(
-            f'SELECT DISTINCT s.name, f.path '
+            f"SELECT DISTINCT s.name, f.path "
             f'FROM "references" r '
-            f'JOIN symbols s ON s.id = r.src_symbol_id '
-            f'JOIN files f ON f.id = s.file_id '
-            f'WHERE r.dst_symbol_id IN ({ph}) '
+            f"JOIN symbols s ON s.id = r.src_symbol_id "
+            f"JOIN files f ON f.id = s.file_id "
+            f"WHERE r.dst_symbol_id IN ({ph}) "
             f'  AND r.kind = "inherit" '
-            f'  AND r.src_symbol_id NOT IN ({ph})',
+            f"  AND r.src_symbol_id NOT IN ({ph})",
             symbol_ids * 2,
         ).fetchall()
         siblings = [{"name": r["name"], "file": r["path"]} for r in sibling_rows]
@@ -172,7 +183,8 @@ def _rerank(
                 "role": "system",
                 "content": (
                     "Rate the relevance of a code concept to a developer query. "
-                    "Reply with a single decimal number between 0.0 and 1.0. Nothing else."
+                    "Reply with a single decimal number between 0.0 and 1.0. "
+                    "Nothing else."
                 ),
             },
             {
@@ -194,17 +206,21 @@ def _rerank(
     return sorted(scored, key=lambda x: x[1], reverse=True)
 
 
-_STEER_SCHEMA = json.dumps({
-    "type": "object",
-    "properties": {
-        "done": {"type": "boolean"},
-        "next_query": {"type": "string"},
-    },
-    "required": ["done"],
-})
+_STEER_SCHEMA = json.dumps(
+    {
+        "type": "object",
+        "properties": {
+            "done": {"type": "boolean"},
+            "next_query": {"type": "string"},
+        },
+        "required": ["done"],
+    }
+)
 
 
-def _steer(original_query: str, results: list[dict], backend, iteration: int) -> str | None:
+def _steer(
+    original_query: str, results: list[dict], backend, iteration: int
+) -> str | None:
     """Returns a follow-up query string, or None if done."""
     summaries = "\n".join(
         f"- {r['concept']} ({r['role']}): {r['why_relevant']}" for r in results
@@ -213,12 +229,17 @@ def _steer(original_query: str, results: list[dict], backend, iteration: int) ->
         {
             "role": "system",
             "content": (
-                "You are helping a developer find relevant code in a codebase index.\n"
+                "You are helping a developer find relevant code in a "
+                "codebase index.\n"
                 "Given their query and the top concepts retrieved, decide:\n"
-                '- Output {"done": true} if the concepts directly address the query.\n'
-                '- Output {"done": false, "next_query": "..."} ONLY if there is a clearly '
-                "different aspect of the query not covered at all by the current results. "
-                "The follow-up must use different keywords, not just rephrase the original.\n"
+                '- Output {"done": true} if the concepts directly address '
+                "the query.\n"
+                '- Output {"done": false, "next_query": "..."} ONLY if there '
+                "is a clearly "
+                "different aspect of the query not covered at all by the "
+                "current results. "
+                "The follow-up must use different keywords, not just rephrase "
+                "the original.\n"
                 "Default to done. Output only valid JSON, nothing else."
             ),
         },
@@ -252,7 +273,9 @@ def agentic_query(
     from combfind import telemetry
 
     conn = get_connection(db_path)
-    cfg_row = conn.execute("SELECT value FROM build_config WHERE key = 'embed_model'").fetchone()
+    cfg_row = conn.execute(
+        "SELECT value FROM build_config WHERE key = 'embed_model'"
+    ).fetchone()
     embed_model = json.loads(cfg_row[0]) if cfg_row else "all-MiniLM-L6-v2"
     conn.close()
     model = SentenceTransformer(embed_model)

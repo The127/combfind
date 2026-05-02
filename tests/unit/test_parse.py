@@ -36,7 +36,9 @@ def env(tmp_path):
 
 def _symbols(db_path):
     conn = get_connection(db_path)
-    rows = conn.execute("SELECT name, kind, qualified_name, docstring FROM symbols").fetchall()
+    rows = conn.execute(
+        "SELECT name, kind, qualified_name, docstring FROM symbols"
+    ).fetchall()
     conn.close()
     return {r["name"]: dict(r) for r in rows}
 
@@ -95,7 +97,7 @@ def test_reruns_on_file_change(env, tmp_path):
     run(db_path, repo_path=repo_path)
 
     # Add a new function to the file
-    sample = (tmp_path / "src" / "sample.py")
+    sample = tmp_path / "src" / "sample.py"
     sample.write_text(SAMPLE + "\ndef extra(): pass\n")
 
     run(db_path, repo_path=repo_path)

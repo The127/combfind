@@ -7,13 +7,15 @@ try:
 except ImportError:
     SentenceTransformer = None  # type: ignore[assignment,misc]
 
-from combfind.db import get_connection
 from combfind import telemetry
+from combfind.db import get_connection
 
 
 def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     if SentenceTransformer is None:
-        raise ImportError("sentence-transformers is required for the embed_concepts stage")
+        raise ImportError(
+            "sentence-transformers is required for the embed_concepts stage"
+        )
 
     conn = get_connection(db_path)
 
@@ -41,15 +43,20 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
     concept_ids = [r["id"] for r in rows]
     texts = [r["description"] for r in rows]
 
-    embeddings = model.encode(texts, batch_size=128, show_progress_bar=False, convert_to_numpy=True)
+    embeddings = model.encode(
+        texts, batch_size=128, show_progress_bar=False, convert_to_numpy=True
+    )
     embeddings = np.array(embeddings, dtype=np.float32)
 
     for concept_id, emb in zip(concept_ids, embeddings):
         conn.execute(
-            "INSERT OR REPLACE INTO concept_embeddings(concept_id, embedding) VALUES (?,?)",
+            "INSERT OR REPLACE INTO concept_embeddings(concept_id, embedding) "
+            "VALUES (?,?)",
             (concept_id, emb.tobytes()),
         )
 
     conn.commit()
     conn.close()
-    telemetry.info("embed_concepts complete", concepts=len(concept_ids), model=embed_model)
+    telemetry.info(
+        "embed_concepts complete", concepts=len(concept_ids), model=embed_model
+    )

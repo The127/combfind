@@ -45,7 +45,9 @@ def env(tmp_path):
 
 def _symbols(db_path):
     conn = get_connection(db_path)
-    rows = conn.execute("SELECT name, kind, qualified_name, docstring FROM symbols").fetchall()
+    rows = conn.execute(
+        "SELECT name, kind, qualified_name, docstring FROM symbols"
+    ).fetchall()
     conn.close()
     return {r["name"]: dict(r) for r in rows}
 
