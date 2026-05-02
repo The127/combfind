@@ -2,9 +2,9 @@
 
 When an AI coding agent gets a ticket like "users get logged out randomly on mobile," it has two failure modes: it reads too many files burning tokens and time, or it finds *a* relevant file and patches it locally, missing that the bug lives in shared code, an interface, or a sibling implementation.
 
-combfind fixes this. It builds a concept map of a codebase so an agent can query "session token refresh" and get back ranked work areas with files, line ranges, and structural context, including whether a concept is an interface, an implementation, or has sibling implementations that also need updating. In practice this cuts the token cost of the orientation phase by **50-66%**: the agent reads 3-5 targeted files instead of scanning dozens.
+combfind fixes this. It builds a concept map of a codebase so an agent can query "session token refresh" and get back ranked symbols with files and line ranges. The key is what it tells you about structure: is this an interface, an implementation, or one of several siblings that all need to change together? That context is what prevents a local patch to the wrong layer. In practice it cuts orientation-phase token cost by **50-66%** (measured on one dev loop; your mileage will vary): the agent reads 3-5 targeted files instead of scanning dozens.
 
-Runs entirely locally. No paid APIs.
+Runs entirely locally. Doesn't require paid APIs.
 
 ## Install
 
@@ -161,7 +161,7 @@ The `init` pipeline runs six stages, each reading and writing to a SQLite file:
 5. **label**: a local LLM names and describes each cluster and assigns a structural role (`interface` | `implementation` | `orchestrator` | `entry_point` | `domain_model` | `infrastructure` | `cross_cutting`)
 6. **embed concepts**: sentence-transformers produces a vector per concept description
 
-At query time: embed the query, cosine search over concept embeddings, optionally rerank with LLM, expand top concepts to member symbols and 1-hop callers/callees, return ranked work areas.
+At query time: embed the query, cosine search over concept embeddings, optionally rerank with LLM, expand top concepts to member symbols and 1-hop callers/callees, return ranked symbols and code regions.
 
 Stages are cached by a content hash of their inputs. When you re-run `init`, only stages affected by changed files are re-executed; the rest are skipped. Pass `--force` to rebuild from scratch.
 
