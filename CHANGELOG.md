@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-05-02)
+
+### Features
+
+- Bump default model and add COMBFIND_MODEL env var
+  ([#4](https://github.com/The127/combfind/pull/4),
+  [`604b45e`](https://github.com/The127/combfind/commit/604b45e51179a3f9c53cb370267fc36f71492498))
+
+- Default model: Qwen2.5-3B-Instruct (Q4_K_M) → Qwen2.5-Coder-3B-Instruct (Q6_K). The Coder variant
+  is purpose-built for code, and Q6_K is a less lossy quantization (~2.5 GB vs ~2 GB) -
+  `--llm-model` on `init` now also reads `COMBFIND_MODEL` from the env - `query` gains `--llm-model`
+  (also reading `COMBFIND_MODEL`) so reranking and agentic queries can pick a specific model without
+  falling back to whatever auto-detection finds first
+
+Flag name `--llm-model` is unchanged.
+
+
 ## v0.1.0 (2026-05-02)
 
 ### Bug Fixes
