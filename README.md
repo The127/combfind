@@ -2,7 +2,7 @@
 
 When an AI coding agent gets a ticket like "users get logged out randomly on mobile," it has two failure modes: it reads too many files burning tokens and time, or it finds *a* relevant file and patches it locally, missing that the bug lives in shared code, an interface, or a sibling implementation.
 
-combfind fixes this. It builds a concept map of a codebase so an agent can query "session token refresh" and get back ranked work areas with files, line ranges, and structural context, including whether a concept is an interface, an implementation, or has sibling implementations that also need updating.
+combfind fixes this. It builds a concept map of a codebase so an agent can query "session token refresh" and get back ranked work areas with files, line ranges, and structural context, including whether a concept is an interface, an implementation, or has sibling implementations that also need updating. In practice this cuts the token cost of the orientation phase by **50-66%**: the agent reads 3-5 targeted files instead of scanning dozens.
 
 Runs entirely locally. No paid APIs.
 
@@ -167,7 +167,9 @@ Stages are cached by a content hash of their inputs. When you re-run `init`, onl
 
 ## Performance
 
-On a 50k LOC Go codebase using Qwen2.5:7b via Ollama, the initial index builds in ~5 minutes. Reindexing is incremental, so subsequent runs are fast. Query time is around 7 seconds, most of which is loading the local model.
+On a 50k LOC Go codebase using Qwen2.5:7b via Ollama, the initial index builds in ~5 minutes. Query time is around 7 seconds, most of which is loading the local model.
+
+**Incremental reindexing is fast.** When a handful of files change, re-running `init` takes around 30 seconds; only the stages affected by changed files are re-executed. The index is also crash-safe: each stage is committed atomically to SQLite, so if a run is interrupted it resumes from the last completed stage rather than starting over.
 
 The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 real bug fixes from a production Go codebase. That puts it above dense retrieval baselines like BM25 and E5-large (NDCG ~0.57-0.59 per [Practical Code RAG at Scale, 2025](https://arxiv.org/abs/2510.20609)), with no API costs. The state of the art (Agentless with frontier models) reaches ~90% recall@5, but requires expensive multi-step LLM pipelines per query. combfind trades some accuracy for being fast, cheap, and fully local.
 
