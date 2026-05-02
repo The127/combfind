@@ -168,7 +168,7 @@ def test_unchanged_file_preserves_docstring(tmp_path):
     assert syms["nodoc"]["docstring"] == "generated"
 
 
-def test_changed_file_resets_docstring(tmp_path):
+def test_changed_symbol_resets_docstring(tmp_path):
     (tmp_path / "src").mkdir()
     f = tmp_path / "src" / "a.py"
     f.write_text("def nodoc(): pass\n")
@@ -184,11 +184,114 @@ def test_changed_file_resets_docstring(tmp_path):
     conn.commit()
     conn.close()
 
-    f.write_text("def nodoc(): pass\n# changed\n")
+    # signature change → hash changes → symbol re-inserted from scratch
+    f.write_text("def nodoc(x): pass\n")
     run(db_path, repo_path=str(tmp_path))
 
     syms = _symbols(db_path)
     assert syms["nodoc"]["docstring"] is None
+
+
+def test_file_change_preserves_unchanged_symbol_docstring(tmp_path):
+    (tmp_path / "src").mkdir()
+    f = tmp_path / "src" / "a.py"
+    f.write_text("def nodoc(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    conn.execute("UPDATE symbols SET docstring = 'generated' WHERE name = 'nodoc'")
+    conn.commit()
+    conn.close()
+
+    # file changes (new comment) but symbol hash unchanged → row preserved
+    f.write_text("def nodoc(): pass\n# comment\n")
+    run(db_path, repo_path=str(tmp_path))
+
+    syms = _symbols(db_path)
+    assert syms["nodoc"]["docstring"] == "generated"
+
+
+def test_symbol_has_content_hash(env):
+    run(env[1], repo_path=env[0])
+    conn = get_connection(env[1])
+    rows = conn.execute("SELECT content_hash FROM symbols").fetchall()
+    conn.close()
+    assert all(r["content_hash"] is not None for r in rows)
+
+
+def test_unchanged_symbol_preserves_embedding_on_file_change(tmp_path):
+    (tmp_path / "src").mkdir()
+    f = tmp_path / "src" / "a.py"
+    f.write_text("def func(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    sym_id = conn.execute("SELECT id FROM symbols WHERE name = 'func'").fetchone()["id"]
+    conn.execute(
+        "INSERT INTO symbol_embeddings(symbol_id, embedding) VALUES (?, ?)",
+        (sym_id, b"\x00" * 4),
+    )
+    conn.commit()
+    conn.close()
+
+    # blank line above shifts start_line but hash unchanged
+    f.write_text("\ndef func(): pass\n")
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    emb = conn.execute(
+        "SELECT embedding FROM symbol_embeddings WHERE symbol_id = "
+        "(SELECT id FROM symbols WHERE name = 'func')"
+    ).fetchone()
+    row = conn.execute(
+        "SELECT start_line FROM symbols WHERE name = 'func'"
+    ).fetchone()
+    conn.close()
+    assert emb is not None
+    assert row["start_line"] == 2
+
+
+def test_changed_symbol_drops_embedding(tmp_path):
+    (tmp_path / "src").mkdir()
+    f = tmp_path / "src" / "a.py"
+    f.write_text("def func(): pass\n")
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    sym_id = conn.execute("SELECT id FROM symbols WHERE name = 'func'").fetchone()["id"]
+    conn.execute(
+        "INSERT INTO symbol_embeddings(symbol_id, embedding) VALUES (?, ?)",
+        (sym_id, b"\x00" * 4),
+    )
+    conn.commit()
+    conn.close()
+
+    # signature change → hash changes → old symbol row deleted → embedding cascades away
+    f.write_text("def func(x): pass\n")
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    emb = conn.execute(
+        "SELECT embedding FROM symbol_embeddings WHERE symbol_id = "
+        "(SELECT id FROM symbols WHERE name = 'func')"
+    ).fetchone()
+    conn.close()
+    assert emb is None
 
 
 def test_deleted_file_removes_symbols(tmp_path):

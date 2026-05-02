@@ -83,43 +83,36 @@ def run(
                 continue
             content_hash = hashlib.sha256(content).hexdigest()
 
-            if conn.execute(
-                "SELECT 1 FROM files WHERE path = ? AND content_hash = ?",
-                (rel_path, content_hash),
-            ).fetchone():
+            existing_file = conn.execute(
+                "SELECT id, content_hash FROM files WHERE path = ?", (rel_path,)
+            ).fetchone()
+
+            if existing_file and existing_file["content_hash"] == content_hash:
                 skipped += 1
                 continue
-
-            conn.execute("DELETE FROM files WHERE path = ?", (rel_path,))
-            conn.execute(
-                "INSERT INTO files(path, language, content_hash, size_bytes) "
-                "VALUES (?,?,?,?)",
-                (rel_path, lang, content_hash, len(content)),
-            )
-            file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
             parser = parsers[lang]
             tree = parser.parse(content)
             module = _module_name(repo, file_path)
             walker = get_walker(lang)
+            new_symbols = walker.extract_symbols(tree.root_node, module)
 
-            for sym in walker.extract_symbols(tree.root_node, module):
+            if existing_file:
+                file_id = existing_file["id"]
                 conn.execute(
-                    "INSERT INTO symbols"
-                    "(file_id, name, qualified_name, kind, signature, "
-                    "start_line, end_line, docstring) "
-                    "VALUES (?,?,?,?,?,?,?,?)",
-                    (
-                        file_id,
-                        sym["name"],
-                        sym["qualified_name"],
-                        sym["kind"],
-                        sym["signature"],
-                        sym["start_line"],
-                        sym["end_line"],
-                        sym["docstring"],
-                    ),
+                    "UPDATE files SET content_hash = ?, language = ?, size_bytes = ? WHERE id = ?",
+                    (content_hash, lang, len(content), file_id),
                 )
+                _diff_symbols(conn, file_id, new_symbols)
+            else:
+                conn.execute(
+                    "INSERT INTO files(path, language, content_hash, size_bytes) "
+                    "VALUES (?,?,?,?)",
+                    (rel_path, lang, content_hash, len(content)),
+                )
+                file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+                for sym in new_symbols:
+                    _insert_symbol(conn, file_id, sym)
 
             processed += 1
 
@@ -142,6 +135,70 @@ def run(
 # ---------------------------------------------------------------------------
 # internals
 # ---------------------------------------------------------------------------
+
+
+def _symbol_hash(sym: dict) -> str:
+    parts = [sym["qualified_name"] or sym["name"]]
+    if sym["signature"] and sym["signature"] != sym["name"]:
+        parts.append(sym["signature"])
+    if sym["docstring"]:
+        parts.append(sym["docstring"])
+    return hashlib.sha256(" ".join(parts).encode("utf-8")).hexdigest()
+
+
+def _insert_symbol(conn, file_id: int, sym: dict) -> None:
+    conn.execute(
+        "INSERT INTO symbols"
+        "(file_id, name, qualified_name, kind, signature, "
+        "start_line, end_line, docstring, content_hash) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        (
+            file_id,
+            sym["name"],
+            sym["qualified_name"],
+            sym["kind"],
+            sym["signature"],
+            sym["start_line"],
+            sym["end_line"],
+            sym["docstring"],
+            _symbol_hash(sym),
+        ),
+    )
+
+
+def _diff_symbols(conn, file_id: int, new_symbols: list[dict]) -> None:
+    existing = {
+        row["qualified_name"]: row
+        for row in conn.execute(
+            "SELECT id, qualified_name, content_hash, start_line, end_line "
+            "FROM symbols WHERE file_id = ?",
+            (file_id,),
+        ).fetchall()
+    }
+
+    new_qnames: set[str] = set()
+    for sym in new_symbols:
+        qname = sym["qualified_name"]
+        new_qnames.add(qname)
+        sym_hash = _symbol_hash(sym)
+
+        if qname in existing:
+            old = existing[qname]
+            if old["content_hash"] == sym_hash:
+                if old["start_line"] != sym["start_line"] or old["end_line"] != sym["end_line"]:
+                    conn.execute(
+                        "UPDATE symbols SET start_line = ?, end_line = ? WHERE id = ?",
+                        (sym["start_line"], sym["end_line"], old["id"]),
+                    )
+            else:
+                conn.execute("DELETE FROM symbols WHERE id = ?", (old["id"],))
+                _insert_symbol(conn, file_id, sym)
+        else:
+            _insert_symbol(conn, file_id, sym)
+
+    for qname, old in existing.items():
+        if qname not in new_qnames:
+            conn.execute("DELETE FROM symbols WHERE id = ?", (old["id"],))
 
 
 def _excluded_by_path(rel_path: str, excluded: set[str]) -> bool:

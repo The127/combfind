@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS symbols (
     signature      TEXT,
     start_line     INTEGER NOT NULL,
     end_line       INTEGER NOT NULL,
-    docstring      TEXT
+    docstring      TEXT,
+    content_hash   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS "references" (
