@@ -55,11 +55,19 @@ def _stage_fn(name: str):
     raise ValueError(f"unknown stage: {name!r}")
 
 
+# Only these params affect the *output* of any stage. Other keys
+# (repo_path, llm_model, llm_workers, etc.) are operational concerns —
+# moving the DB or changing parallelism shouldn't invalidate a stage's
+# cache.
+_HASH_RELEVANT_PARAMS = frozenset({"exclude_paths", "exclude_regex"})
+
+
 def _input_hash(conn, params: dict) -> str:
     hashes = [
         r[0] for r in conn.execute("SELECT content_hash FROM files ORDER BY path")
     ]
-    payload = json.dumps({"hashes": sorted(hashes), "params": params}, sort_keys=True)
+    relevant = {k: params[k] for k in _HASH_RELEVANT_PARAMS if k in params}
+    payload = json.dumps({"hashes": sorted(hashes), "params": relevant}, sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
