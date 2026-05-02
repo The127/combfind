@@ -1,6 +1,7 @@
 from typing import Protocol
 
 from combfind.pipeline.walkers.go import GoWalker
+from combfind.pipeline.walkers.java import JavaWalker
 from combfind.pipeline.walkers.python import PythonWalker
 
 
@@ -13,6 +14,7 @@ class Walker(Protocol):
 _REGISTRY: dict[str, Walker] = {
     "python": PythonWalker(),
     "go": GoWalker(),
+    "java": JavaWalker(),
 }
 
 
