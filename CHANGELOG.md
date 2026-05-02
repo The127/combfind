@@ -1,24 +1,24 @@
 # CHANGELOG
 
 
-## v0.2.0 (2026-05-02)
+## v1.0.3 (2026-05-02)
 
-### Features
+### Bug Fixes
 
-- Bump default model and add COMBFIND_MODEL env var
-  ([#4](https://github.com/The127/combfind/pull/4),
-  [`604b45e`](https://github.com/The127/combfind/commit/604b45e51179a3f9c53cb370267fc36f71492498))
+- Pin llama-cpp-python<0.3.20
+  ([`d5825ad`](https://github.com/The127/combfind/commit/d5825adfba852852bd9c688890b6499f02a4d292))
 
-- Default model: Qwen2.5-3B-Instruct (Q4_K_M) → Qwen2.5-Coder-3B-Instruct (Q6_K). The Coder variant
-  is purpose-built for code, and Q6_K is a less lossy quantization (~2.5 GB vs ~2 GB) -
-  `--llm-model` on `init` now also reads `COMBFIND_MODEL` from the env - `query` gains `--llm-model`
-  (also reading `COMBFIND_MODEL`) so reranking and agentic queries can pick a specific model without
-  falling back to whatever auto-detection finds first
+Versions 0.3.20 and 0.3.21 ship corrupt universal wheels: the Metal index URL returns HTTP 404, and
+  the GitHub release asset itself is either an invalid ZIP (0.3.20) or has a bad CRC on libllama
+  dylib (0.3.21). Until upstream republishes, constrain to the last known-good 0.3.19.
 
-Flag name `--llm-model` is unchanged.
+### Chores
+
+- Publish github releases as non-draft
+  ([`59841df`](https://github.com/The127/combfind/commit/59841dfc6d2ec0dbaaed8e20c6acdf176402f251))
 
 
-## v0.1.0 (2026-05-02)
+## v1.0.2 (2026-05-02)
 
 ### Bug Fixes
 
@@ -45,6 +45,9 @@ Flag name `--llm-model` is unchanged.
 
 - Enable Sigstore attestations on PyPI releases
   ([`d73b1b8`](https://github.com/The127/combfind/commit/d73b1b83c1da3249258ee91038ff57a0bb6aa2ff))
+
+- Reset version to 1.0.2 to realign with pre-semantic-release history
+  ([`b688345`](https://github.com/The127/combfind/commit/b688345c10d6a3533ac4c828a4f204a9c322214a))
 
 ### Code Style
 
@@ -82,6 +85,9 @@ No behavioral changes.
 
 ### Documentation
 
+- Add CONTRIBUTING.md with dev setup, commit conventions, and release pipeline
+  ([`fe2fdb1`](https://github.com/The127/combfind/commit/fe2fdb1594af4709cfdba77ea25e3273c89e47e2))
+
 - Document HF_HUB_OFFLINE env var
   ([`af8e5a2`](https://github.com/The127/combfind/commit/af8e5a2e798230dd535998db9060707f4bfc5b6b))
 
@@ -107,6 +113,18 @@ No behavioral changes.
 
 - Agentic query loop with --agentic-limit, tuned steering prompt, cached embed model
   ([`2d7ef26`](https://github.com/The127/combfind/commit/2d7ef26842e4097f687a886aab8842816e897379))
+
+- Bump default model and add COMBFIND_MODEL env var
+  ([#4](https://github.com/The127/combfind/pull/4),
+  [`604b45e`](https://github.com/The127/combfind/commit/604b45e51179a3f9c53cb370267fc36f71492498))
+
+- Default model: Qwen2.5-3B-Instruct (Q4_K_M) → Qwen2.5-Coder-3B-Instruct (Q6_K). The Coder variant
+  is purpose-built for code, and Q6_K is a less lossy quantization (~2.5 GB vs ~2 GB) -
+  `--llm-model` on `init` now also reads `COMBFIND_MODEL` from the env - `query` gains `--llm-model`
+  (also reading `COMBFIND_MODEL`) so reranking and agentic queries can pick a specific model without
+  falling back to whatever auto-detection finds first
+
+Flag name `--llm-model` is unchanged.
 
 - Enable reranker via --rerank --llm-mode on query command
   ([`ed68334`](https://github.com/The127/combfind/commit/ed68334406458dd5667a591758eb5d4800ca3711))
