@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.4.0 (2026-05-02)
+
+### Features
+
+- Inspect accepts multiple qualified names
+  ([`47d3d0d`](https://github.com/The127/combfind/commit/47d3d0d82b828892112187d4e438efe78204498d))
+
+combfind inspect sym.A sym.B now inspects all given symbols in one call. JSON output is always a
+  list; text output separates results with a blank line.
+
+
 ## v1.3.0 (2026-05-02)
 
 ### Features
