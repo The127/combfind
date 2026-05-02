@@ -13,11 +13,13 @@ pip3 install "combfind[llm]" \
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 ```
 
-Download a model (one-time, ~2 GB):
+Download the default model (Qwen2.5-Coder-3B-Instruct Q6_K, ~2.5 GB):
 
 ```bash
 combfind download-model
 ```
+
+Or use a different model — see `combfind download-model --help`.
 
 For a remote OpenAI-compatible API instead:
 
@@ -46,7 +48,7 @@ COMBFIND_LLM_API_KEY=sk-... COMBFIND_LLM_MODEL=gpt-4o-mini \
 
 # Index using Apple Silicon MLX
 combfind init /path/to/repo --db repo.db --llm-mode mlx \
-  --llm-model mlx-community/Qwen2.5-7B-Instruct-4bit
+  --model mlx-community/Qwen2.5-7B-Instruct-4bit
 
 # Query it
 combfind query "how does authentication work" --db repo.db
@@ -113,7 +115,7 @@ concept siblings (1):
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--db` | `<repo_path>/.combfind.db` | Output path |
-| `--llm-model` | auto-detected | Path to a GGUF model file (local mode only) |
+| `--model` | `qwen2.5-coder-3b-instruct-q6_k.gguf` from `~/.cache/combfind/models/` | GGUF path (local mode) or HuggingFace repo (mlx mode); also reads `COMBFIND_MODEL` |
 | `--llm-mode` | `local` | LLM backend: `local` (llama.cpp), `openai` (OpenAI-compatible API), or `mlx` (Apple Silicon) |
 | `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
 | `--exclude-regex` | - | Regex matched against file paths to skip |
@@ -132,6 +134,7 @@ concept siblings (1):
 | `--agentic` | off | Run iterative query loop: LLM steers follow-up searches until satisfied (requires `--llm-mode`) |
 | `--agentic-limit` | `3` | Max iterations for `--agentic` mode |
 | `--llm-mode` | - | LLM backend for `--rerank` / `--agentic`: `local` or `openai` |
+| `--model` | `qwen2.5-coder-3b-instruct-q6_k.gguf` from `~/.cache/combfind/models/` | Model for `--rerank` / `--agentic`; also reads `COMBFIND_MODEL` |
 
 ### Inspect options
 
@@ -145,6 +148,7 @@ concept siblings (1):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
+| `COMBFIND_MODEL` | (default GGUF) | GGUF path (local) or HF repo (mlx); equivalent to `--model` |
 | `COMBFIND_LLM_BASE_URL` | - | Base URL for OpenAI-compatible API (e.g. `https://api.openai.com/v1`) |
 | `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
 | `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
@@ -169,7 +173,7 @@ Any API that speaks the OpenAI chat completions format works, including:
 - **LM Studio** — set `COMBFIND_LLM_BASE_URL=http://localhost:1234/v1`
 - **Any other OpenAI-compatible server** — point `COMBFIND_LLM_BASE_URL` at its `/v1` endpoint
 
-`--llm-model` is ignored in openai mode; the model is selected via `COMBFIND_LLM_MODEL`.
+`--model` / `COMBFIND_MODEL` is ignored in openai mode; the model is selected via `COMBFIND_LLM_MODEL`.
 
 ## Clustering
 
