@@ -88,7 +88,10 @@ def _run_one(
     stage: str, db_path: str, input_hash: str, params: dict, backend=None
 ) -> None:
     conn = get_connection(db_path)
-    if _is_cached(conn, stage, input_hash):
+    # parse always runs: it's the only stage that reads disk, so it must execute
+    # to discover new/changed/deleted files. Per-file hash check inside parse
+    # makes the no-op case cheap.
+    if stage != "parse" and _is_cached(conn, stage, input_hash):
         telemetry.debug("stage cached, skipping", stage=stage)
         conn.close()
         return
