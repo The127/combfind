@@ -2,7 +2,7 @@ import sqlite3
 
 import sqlite_vec
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY);
@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS concepts (
                      'entry_point','domain_model','infrastructure','cross_cutting'
                  )),
     centroid     BLOB,
-    member_count INTEGER
+    member_count INTEGER,
+    member_hash  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS concept_members (
@@ -108,3 +109,14 @@ def create_schema(conn: sqlite3.Connection) -> None:
     if existing is None:
         conn.execute("INSERT INTO schema_version VALUES (?)", (SCHEMA_VERSION,))
         conn.commit()
+    elif existing["version"] < SCHEMA_VERSION:
+        _migrate(conn, existing["version"])
+
+
+def _migrate(conn: sqlite3.Connection, from_version: int) -> None:
+    if from_version < 2:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(concepts)").fetchall()}
+        if "member_hash" not in cols:
+            conn.execute("ALTER TABLE concepts ADD COLUMN member_hash TEXT")
+    conn.execute("UPDATE schema_version SET version = ?", (SCHEMA_VERSION,))
+    conn.commit()

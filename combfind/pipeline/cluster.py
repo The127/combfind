@@ -1,3 +1,4 @@
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -30,11 +31,13 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
         packages[pkg].append(row)
 
     prev_centroids = _load_prev_centroids(conn)
+    prev_labels = _load_prev_labels(conn)
 
     conn.execute("DELETE FROM concepts")
     conn.execute("DELETE FROM concept_members")
 
     total_concepts = 0
+    reused = 0
     for pkg, pkg_rows in sorted(packages.items()):
         symbol_ids = [r["symbol_id"] for r in pkg_rows]
         embeddings = np.array(
@@ -44,15 +47,24 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
         k = max(1, round(len(pkg_rows) / _TARGET_CONCEPT_SIZE))
         telemetry.debug("cluster package", package=pkg, symbols=len(pkg_rows), k=k)
         if k == 1:
-            _insert_concept(conn, symbol_ids, embeddings, list(range(len(pkg_rows))))
+            mh = _member_hash(conn, symbol_ids)
+            label = prev_labels.get(mh)
+            _insert_concept(conn, symbol_ids, embeddings, list(range(len(pkg_rows))), member_hash=mh, label=label)
             total_concepts += 1
+            if label:
+                reused += 1
         else:
             labels = _kmeans(embeddings, k, init_centroids=prev_centroids.get(pkg))
             for cluster_id in range(k):
                 indices = [i for i, label in enumerate(labels) if label == cluster_id]
                 if indices:
-                    _insert_concept(conn, symbol_ids, embeddings, indices)
+                    member_ids = [symbol_ids[i] for i in indices]
+                    mh = _member_hash(conn, member_ids)
+                    label = prev_labels.get(mh)
+                    _insert_concept(conn, symbol_ids, embeddings, indices, member_hash=mh, label=label)
                     total_concepts += 1
+                    if label:
+                        reused += 1
 
     for key, val in (
         ("noise_strategy", noise),
@@ -65,7 +77,24 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
 
     conn.commit()
     conn.close()
-    telemetry.info("cluster complete", concepts=total_concepts, packages=len(packages))
+    telemetry.info("cluster complete", concepts=total_concepts, reused_labels=reused, packages=len(packages))
+
+
+def _member_hash(conn, symbol_ids: list) -> str:
+    placeholders = ",".join("?" * len(symbol_ids))
+    rows = conn.execute(
+        f"SELECT content_hash FROM symbols WHERE id IN ({placeholders}) ORDER BY content_hash",
+        symbol_ids,
+    ).fetchall()
+    return hashlib.sha256("".join(r[0] for r in rows).encode()).hexdigest()
+
+
+def _load_prev_labels(conn) -> dict[str, tuple]:
+    rows = conn.execute(
+        "SELECT member_hash, name, description, role FROM concepts "
+        "WHERE member_hash IS NOT NULL AND name IS NOT NULL"
+    ).fetchall()
+    return {r["member_hash"]: (r["name"], r["description"], r["role"]) for r in rows}
 
 
 def _load_prev_centroids(conn) -> dict[str, np.ndarray]:
@@ -108,14 +137,16 @@ def _insert_concept(
     embeddings: np.ndarray,
     indices: list,
     *,
-    name: str | None = None,
+    member_hash: str | None = None,
+    label: tuple | None = None,
 ) -> None:
     member_embs = embeddings[indices]
     centroid = member_embs.mean(axis=0).astype(np.float32)
+    name, description, role = label if label else (None, None, None)
 
     conn.execute(
-        "INSERT INTO concepts(name, member_count, centroid) VALUES (?,?,?)",
-        (name, len(indices), centroid.tobytes()),
+        "INSERT INTO concepts(name, description, role, member_count, centroid, member_hash) VALUES (?,?,?,?,?,?)",
+        (name, description, role, len(indices), centroid.tobytes(), member_hash),
     )
     concept_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
