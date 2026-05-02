@@ -30,7 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # pip install "combfind[llm]" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-llm = ["llama-cpp-python>=0.2", "huggingface_hub>=0.20"]
+llm = ["llama-cpp-python>=0.2,<0.3.20", "huggingface_hub>=0.20"]
 openai = ["openai>=1.0"]
 mlx = ["mlx-lm>=0.18"]
 hdbscan = ["hdbscan>=0.8"]
