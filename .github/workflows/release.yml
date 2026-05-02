@@ -6,7 +6,6 @@ on:
 
 jobs:
   test:
-    if: "!startsWith(github.event.head_commit.message, 'release: v')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +23,7 @@ jobs:
   release:
     needs: test
     runs-on: ubuntu-latest
+    concurrency: release
     permissions:
       contents: write
       id-token: write
@@ -31,39 +31,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Bump patch version
-        id: bump
-        run: |
-          python3 - <<'EOF'
-          import re, pathlib
-          text = pathlib.Path("pyproject.toml").read_text()
-          m = re.search(r'version = "(\d+\.\d+\.)(\d+)"', text)
-          new_version = m.group(1) + str(int(m.group(2)) + 1)
-          pathlib.Path("pyproject.toml").write_text(
-              text[:m.start()] + f'version = "{new_version}"' + text[m.end():]
-          )
-          print(new_version)
-          EOF
-          echo "version=$(python3 -c "import re; print(re.search(r'version = \"([^\"]+)\"', open('pyproject.toml').read()).group(1))")" >> "$GITHUB_OUTPUT"
-
-      - name: Commit and push version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml
-          git commit -m "release: v${{ steps.bump.outputs.version }}"
-          git push
+      - name: Semantic Release
+        id: semrel
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
+        if: steps.semrel.outputs.released == 'true'
         run: pip install build && python -m build
 
       - name: Publish to PyPI
+        if: steps.semrel.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           attestations: true
