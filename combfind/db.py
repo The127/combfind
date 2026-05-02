@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     kind           TEXT NOT NULL CHECK(kind IN (
                        'function','class','method','interface','struct',
                        'constructor','property','enum','enum_constant',
-                       'record','type_alias','module'
+                       'record','type_alias','module','constant'
                    )),
     signature      TEXT,
     start_line     INTEGER NOT NULL,

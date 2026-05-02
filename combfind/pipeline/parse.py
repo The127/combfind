@@ -213,18 +213,23 @@ def _excluded_by_path(rel_path: str, excluded: set[str]) -> bool:
 
 
 def _build_parsers() -> dict:
-    from tree_sitter import Parser
+    from tree_sitter import Language, Parser
 
     parsers = {}
     for lang_name, lang_def in LANGUAGES.items():
-        try:
-            mod = importlib.import_module(lang_def.grammar)
-            from tree_sitter import Language
+        if lang_def.grammar:
+            try:
+                mod = importlib.import_module(lang_def.grammar)
+                parsers[lang_name] = Parser(Language(mod.language()))
+            except (ImportError, Exception) as exc:
+                telemetry.warning("skipping language", language=lang_name, reason=str(exc))
+        elif lang_def.pack_name:
+            try:
+                from tree_sitter_language_pack import get_parser
 
-            lang = Language(mod.language())
-            parsers[lang_name] = Parser(lang)
-        except (ImportError, Exception) as exc:
-            telemetry.warning("skipping language", language=lang_name, reason=str(exc))
+                parsers[lang_name] = get_parser(lang_def.pack_name)
+            except Exception as exc:
+                telemetry.warning("skipping language", language=lang_name, reason=str(exc))
     return parsers
 
 

@@ -1,11 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class LanguageDef:
     extensions: list[str]
-    grammar: str  # importable package name, e.g. "tree_sitter_python"
+    grammar: str  # importable package name, e.g. "tree_sitter_python"; "" if none
     scip_binary: str  # checked via shutil.which at runtime
+    pack_name: str = field(default="")  # name in tree-sitter-language-pack, if no standalone package
 
 
 LANGUAGES: dict[str, LanguageDef] = {
@@ -23,5 +24,11 @@ LANGUAGES: dict[str, LanguageDef] = {
         extensions=[".java"],
         grammar="tree_sitter_java",
         scip_binary="scip-java",
+    ),
+    "gleam": LanguageDef(
+        extensions=[".gleam"],
+        grammar="",
+        scip_binary="",
+        pack_name="gleam",
     ),
 }
