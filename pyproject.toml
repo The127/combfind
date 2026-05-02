@@ -50,6 +50,7 @@ version_toml = ["pyproject.toml:project.version"]
 branch = "master"
 tag_format = "v{version}"
 commit_message = "chore(release): v{version} [skip ci]"
+github_release_draft = false
 
 [tool.semantic_release.publish]
 upload_to_pypi = false
