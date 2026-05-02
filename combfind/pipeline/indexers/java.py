@@ -11,6 +11,26 @@ from combfind.pipeline.indexers import (
     run_scip_binary,
 )
 
+_BUILD_FILES = (
+    "pom.xml",
+    "build.gradle",
+    "build.gradle.kts",
+    "settings.gradle",
+    "settings.gradle.kts",
+    "build.sbt",
+    "build.mill",
+    "build.sc",
+)
+
+
+def _has_build_tool(repo: Path) -> bool:
+    """True if the repo root has a Maven/Gradle/sbt/mill descriptor.
+
+    scip-java requires one of these to index a project; without one the
+    subprocess fails after ~400ms with no useful output.
+    """
+    return any((repo / name).exists() for name in _BUILD_FILES)
+
 
 class JavaIndexer(BaseIndexer):
     def run(self, conn, *, repo_path: str | None = None) -> int:
@@ -21,10 +41,14 @@ class JavaIndexer(BaseIndexer):
             "SELECT 1 FROM files WHERE language = 'java' LIMIT 1"
         ).fetchone():
             return inserted
-        if shutil.which("scip-java"):
+        if shutil.which("scip-java") and _has_build_tool(Path(repo_path)):
             inserted += self._run_scip(conn, repo_path)
         else:
-            telemetry.warning("scip-java not found, falling back to tree-sitter imports")
+            telemetry.warning(
+                "scip-java unavailable for this repo "
+                "(missing binary or no Maven/Gradle/sbt/mill descriptor); "
+                "falling back to tree-sitter imports"
+            )
             inserted += self._run_treesitter(conn, repo_path)
         return inserted
 
@@ -141,7 +165,9 @@ def _inherit(conn) -> int:
     ).fetchall():
         src_id = sym["id"]
         for base_name in _parse_supertypes(sym["signature"]):
-            dst_id = by_qname.get(base_name) or _sole(by_name.get(base_name, []), exclude=src_id)
+            dst_id = by_qname.get(base_name) or _sole(
+                by_name.get(base_name, []), exclude=src_id
+            )
             if dst_id and dst_id != src_id:
                 conn.execute(
                     'INSERT OR IGNORE INTO "references"'
