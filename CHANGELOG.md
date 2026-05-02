@@ -1,6 +1,55 @@
 # CHANGELOG
 
 
+## v1.5.0 (2026-05-02)
+
+### Bug Fixes
+
+- Pin tree-sitter-language-pack to 1.6.2 to avoid broken cp312 wheel in 1.6.3
+  ([`047bd14`](https://github.com/The127/combfind/commit/047bd14b63b005872fb05b9cd0bc2bc21d931781))
+
+### Continuous Integration
+
+- Install gleam extra in test step
+  ([`de7336e`](https://github.com/The127/combfind/commit/de7336e60d05474e6f3f1a0eac3415597a3089bb))
+
+### Documentation
+
+- Add gleam to supported languages and install section
+  ([`7438acf`](https://github.com/The127/combfind/commit/7438acf97701704c3c364bcd0a3e38f012a82c27))
+
+- Clarify crash recovery is batch-level, not just stage-level
+  ([`05aaa3c`](https://github.com/The127/combfind/commit/05aaa3cad15b5a49b89607612ab0c4398363728e))
+
+- Highlight token reduction, incremental reindex timing, and crash safety
+  ([`03b5d10`](https://github.com/The127/combfind/commit/03b5d10eb7904c5a2047d80344e87e6b42e12a24))
+
+- Rewrite readme with sharper value prop, benchmarks, and query guidance
+  ([`db338f5`](https://github.com/The127/combfind/commit/db338f5d49358f69d0c6219cd3f6d2baaa8eb0ba))
+
+- Sharpen intro copy, hedge benchmark, fix paid APIs claim
+  ([`e265754`](https://github.com/The127/combfind/commit/e26575405381cc013760867a9c3ef4ddff694964))
+
+- Simplify supported languages section
+  ([`70d8439`](https://github.com/The127/combfind/commit/70d84391ee7ee696e29bb034b7c3cdeaaa268dce))
+
+### Features
+
+- Add erlang language support
+  ([`8de7b4c`](https://github.com/The127/combfind/commit/8de7b4ce5dda3d6064ab0db124af78d5b4c0aa8a))
+
+- Add gleam language support
+  ([`7946950`](https://github.com/The127/combfind/commit/79469506c7ebe104a86241783cbe36c50f1bc798))
+
+Parses .gleam files via tree-sitter-language-pack (no standalone PyPI package for tree-sitter-gleam
+  exists). Extracts functions, custom types, type aliases, and constants; picks up /// doc comments
+  from the preceding statement_comment sibling.
+
+- LanguageDef gains pack_name field; _build_parsers falls back to tree-sitter-language-pack when
+  grammar is empty - adds 'constant' to the symbols.kind CHECK constraint - install with: pip
+  install "combfind[gleam]"
+
+
 ## v1.4.0 (2026-05-02)
 
 ### Features
