@@ -185,3 +185,7 @@ combfind init . --exclude-regex '.*test.*'
 ## Supported languages
 
 Python, Go. More languages can be added via tree-sitter grammars.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commit conventions, and how the release pipeline works.
