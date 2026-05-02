@@ -1,6 +1,56 @@
 # CHANGELOG
 
 
+## v1.2.0 (2026-05-02)
+
+### Bug Fixes
+
+- Handle NULL content_hash in _member_hash
+  ([`315087d`](https://github.com/The127/combfind/commit/315087d10bb584ce7356de0509c2801aabae9f7d))
+
+COALESCE ensures symbols inserted before the embed stage (or in tests without content_hash) don't
+  crash the cluster stage.
+
+- Prefer documented default GGUF over alphabetical fallback
+  ([`0a9fa0f`](https://github.com/The127/combfind/commit/0a9fa0f021587f5499188315e758a23b37a65dae))
+
+When ~/.cache/combfind/models/ contains multiple GGUF files, the previous _default_llm_model()
+  returned the first one alphabetically. Capital letters sort before lowercase, so a model like
+  'Llama-3.2-3B-Instruct-Q6_K.gguf' would shadow the documented default
+  'qwen2.5-coder-3b-instruct-q6_k.gguf' (lowercase q).
+
+Now check for the documented default file first; only fall back to alphabetical when it's absent.
+
+### Features
+
+- Per-concept member hash to skip re-labeling unchanged concepts
+  ([`01a7d4c`](https://github.com/The127/combfind/commit/01a7d4c32927ec9d06181155ebbb4412fe06f85e))
+
+Each concept now stores a SHA-256 of its members' sorted content hashes. On re-runs, cluster carries
+  forward name/description/role for any concept whose membership hasn't changed, so the label stage
+  only calls the LLM for genuinely changed concepts.
+
+One docstring change: 13 LLM calls → 1.
+
+- Warm-start KMeans from previous centroids for stable clusters
+  ([`e4574eb`](https://github.com/The127/combfind/commit/e4574ebe0eb9ae422075cea5da21f6bfec112205))
+
+On incremental re-runs, initialize KMeans from the previous run's centroids so changed symbols get
+  absorbed into existing clusters rather than reshuffling all assignments. Falls back to k-means++
+  when no prior centroids exist or k has changed.
+
+- **java**: Add Java support via tree-sitter-java
+  ([`a7e405a`](https://github.com/The127/combfind/commit/a7e405ae74bf9d12c0703a32826e82e01f1cdef3))
+
+Adds a JavaWalker that extracts classes, interfaces, enums, records, methods, constructors, enum
+  constants, and nested types. Javadoc comments preceding declarations are captured as docstrings.
+  Package qualified names are derived from the package_declaration when present (matching how
+  GoWalker uses the package clause).
+
+Extends the symbols.kind CHECK constraint to include 'record' and 'enum_constant' kinds for
+  first-class Java symbol types.
+
+
 ## v1.1.0 (2026-05-02)
 
 ### Features
