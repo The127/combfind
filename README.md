@@ -178,7 +178,7 @@ When an agent receives a bug ticket, the right move is to translate the symptom 
 
 ## Supported languages
 
-Python, Go, Java. More languages can be added via tree-sitter grammars with no Python code changes.
+Python, Go, Java.
 
 ## Optional SCIP tools
 
