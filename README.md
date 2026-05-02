@@ -13,7 +13,7 @@ pip3 install "combfind[llm]" \
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 ```
 
-Download a model (one-time, ~2 GB):
+Download the default model (Qwen2.5-Coder-3B-Instruct Q6_K, ~2.5 GB):
 
 ```bash
 combfind download-model
@@ -145,6 +145,7 @@ concept siblings (1):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
+| `COMBFIND_MODEL` | (auto-detected) | GGUF path for `local` mode / HF repo for `mlx` mode; equivalent to `--llm-model` |
 | `COMBFIND_LLM_BASE_URL` | - | Base URL for OpenAI-compatible API (e.g. `https://api.openai.com/v1`) |
 | `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
 | `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
