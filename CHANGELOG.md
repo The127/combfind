@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v1.1.0 (2026-05-02)
+
+### Features
+
+- Scip reference indexing for Go and Python
+  ([`9edf034`](https://github.com/The127/combfind/commit/9edf034a4db76881c5cfeda3b25fdcf1c66299a5))
+
+- Add scip-go and scip-python integration to extract type-resolved call/import edges into the
+  references table - Refactor index stage into indexers/ with BaseIndexer ABC and factory - Each
+  indexer falls back to tree-sitter heuristics when SCIP binary is not installed - Vendor
+  scip_pb2.py (generated from scip.proto) - Add Go imports.scm tree-sitter query for fallback -
+  Update README with optional SCIP dependencies
+
+- Symbol-level content hash for incremental re-embedding
+  ([`dc672fc`](https://github.com/The127/combfind/commit/dc672fcd2a102c2be9c4024a4b089158b0c5ef00))
+
+Add content_hash to symbols table, computed from the text fed to the embedding model (qualified_name
+  + signature + docstring). Parse now diffs symbols on file change instead of deleting and
+  reinserting all of them: unchanged symbols keep their embedding rows, changed symbols drop theirs
+  via FK cascade so embed only processes what actually changed.
+
+
 ## v1.0.3 (2026-05-02)
 
 ### Bug Fixes
