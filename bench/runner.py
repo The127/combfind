@@ -319,12 +319,16 @@ def _print_verdict(
         mean_b = statistics.mean(baseline_times[args.warmup_pairs + 1 :])
         mean_p = statistics.mean(patch_times[args.warmup_pairs + 1 :])
         mean_d = statistics.mean(diffs)
-        sigma = statistics.stdev(diffs) if n >= 2 else 0.10 * mean_b
-        ci_half = 1.96 * sigma / math.sqrt(n) if n >= 2 else float("nan")
         pct = 100.0 * mean_d / mean_b if mean_b > 0 else 0.0
+        if n >= 2:
+            sigma = statistics.stdev(diffs)
+            ci_half = 1.96 * sigma / math.sqrt(n)
+            ci_str = f"{ci_half:.4f}s"
+        else:
+            ci_str = "n/a (single pair)"
         print(
             f"pairs={n}  baseline_mean={mean_b:.4f}s  patch_mean={mean_p:.4f}s  "
-            f"mean_diff={mean_d:+.4f}s ({pct:+.1f}%)  95% CI half-width={ci_half:.4f}s"
+            f"mean_diff={mean_d:+.4f}s ({pct:+.1f}%)  95% CI half-width={ci_str}"
         )
     else:
         print("(no trials)")
