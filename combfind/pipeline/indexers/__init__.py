@@ -17,11 +17,13 @@ class BaseIndexer(ABC):
 
 def get_indexer(language: str) -> BaseIndexer | None:
     from combfind.pipeline.indexers.go import GoIndexer
+    from combfind.pipeline.indexers.java import JavaIndexer
     from combfind.pipeline.indexers.python import PythonIndexer
 
     _registry: dict[str, type[BaseIndexer]] = {
         "python": PythonIndexer,
         "go": GoIndexer,
+        "java": JavaIndexer,
     }
     cls = _registry.get(language)
     return cls() if cls else None

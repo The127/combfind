@@ -194,6 +194,7 @@ These tools are not required but improve reference edge quality when installed:
 |------|----------|---------|--------|
 | `scip-go` | Go | `go install github.com/scip-code/scip-go/cmd/scip-go@latest` | Type-resolved call/import edges between Go symbols |
 | `scip-python` | Python | `npm install -g @sourcegraph/scip-python` | Type-resolved call/import edges between Python symbols |
+| `scip-java` | Java | See [scip-java releases](https://github.com/sourcegraph/scip-java/releases) | Type-resolved call/import edges between Java symbols |
 
 Without them, combfind falls back to tree-sitter heuristics for import edges, which is less precise but works out of the box.
 
