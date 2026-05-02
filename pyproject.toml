@@ -4,11 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "combfind"
-<<<<<<< HEAD
 version = "1.0.0"
-=======
-version = "1.0.0"
->>>>>>> 259574d (release: v1.0.0)
 description = "Queryable concept map of a codebase for LLM coding agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -40,7 +36,7 @@ mlx = ["mlx-lm>=0.18"]
 hdbscan = ["hdbscan>=0.8"]
 scip = ["protobuf>=5.0"]
 output = ["rich>=13.0", "tqdm>=4.66"]
-dev = ["pytest>=8.0", "ruff>=0.4"]
+dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.7"]
 
 [project.scripts]
 combfind = "combfind.cli:cli"
