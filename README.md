@@ -1,78 +1,92 @@
 # combfind
 
-Give an AI agent a codebase. combfind tells it where to look.
+When an AI coding agent gets a ticket like "users get logged out randomly on mobile," it has two failure modes: it reads too many files burning tokens and time, or it finds *a* relevant file and patches it locally, missing that the bug lives in shared code, an interface, or a sibling implementation.
 
-combfind builds a local index of a repository so an agent can find the right files and functions for a task with a plain-text query, without reading the entire codebase.
+combfind fixes this. It builds a concept map of a codebase so an agent can query "session token refresh" and get back ranked work areas with files, line ranges, and structural context, including whether a concept is an interface, an implementation, or has sibling implementations that also need updating.
+
+Runs entirely locally. No paid APIs.
 
 ## Install
 
-For local LLM inference:
-
 ```bash
-pip3 install "combfind[llm]" \
+# Local LLM (llama.cpp)
+pip install "combfind[llm]" \
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+# Apple Silicon (MLX)
+pip install "combfind[mlx]"
+
+# Remote OpenAI-compatible API
+pip install "combfind[openai]"
 ```
 
-Download the default model (Qwen2.5-Coder-3B-Instruct Q6_K, ~2.5 GB):
+Download the default local model (~2.5 GB):
 
 ```bash
 combfind download-model
 ```
 
-For a remote OpenAI-compatible API instead:
+## Quick start
 
 ```bash
-pip3 install "combfind[openai]"
-```
+# Build the index
+combfind init /path/to/repo --db repo.db
 
-For Apple Silicon (MLX):
+# Query it
+combfind query "how does authentication work" --db repo.db
 
-```bash
-pip3 install "combfind[mlx]"
+# Inspect a symbol from the results
+combfind inspect auth.service.AuthService --db repo.db
 ```
 
 ## Usage
 
+### init: build the index
+
 ```bash
-# Index a repository (local LLM, auto-detected model)
+# Basic
 combfind init /path/to/repo --db repo.db
 
 # Exclude test files (recommended for cleaner concepts)
 combfind init /path/to/repo --db repo.db --exclude-regex '.*test.*'
 
-# Index using a remote OpenAI-compatible API
+# OpenAI-compatible API
 COMBFIND_LLM_API_KEY=sk-... COMBFIND_LLM_MODEL=gpt-4o-mini \
   combfind init /path/to/repo --db repo.db --llm-mode openai
 
-# Index using Apple Silicon MLX
+# Apple Silicon MLX
 combfind init /path/to/repo --db repo.db --llm-mode mlx \
   --llm-model mlx-community/Qwen2.5-7B-Instruct-4bit
+```
 
-# Query it
-combfind query "how does authentication work" --db repo.db
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--db` | `<repo_path>/.combfind.db` | Output database path |
+| `--llm-mode` | `local` | LLM backend: `local`, `openai`, or `mlx` |
+| `--llm-model` | auto-detected | GGUF path (local) or HF repo ID (mlx) |
+| `--exclude-paths` | | Paths to skip, relative to repo root (repeatable) |
+| `--exclude-regex` | | Regex matched against file paths to skip |
+| `--llm-workers` | `1` | Parallel LLM calls (useful with `--llm-mode openai`) |
+| `--docgen` | off | Generate docstrings for undocumented symbols (slow) |
+| `--force` | off | Re-run all stages, ignoring the cache |
+
+### query: search the index
+
+```bash
+combfind query "users get logged out randomly" --db repo.db
 combfind query "where are database migrations" --db repo.db --format json
-
-# Inspect a symbol returned by a query
-combfind inspect auth.service.AuthService --db repo.db
-combfind inspect auth.service.AuthService --db repo.db --format json
-
-# Inspect multiple symbols at once
-combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db
-combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db --format json
 ```
 
-### Query output (text)
-
+**Text output:**
 ```
-[1] Token Refresh (implementation) — 0.87
+[1] Token Refresh (implementation) - 0.87
     why: Handles session token validation and refresh logic.
     auth/service.py
       auth.service.AuthService.refresh  :42-67
       auth.service.AuthService.validate  :70-91
 ```
 
-### Query output (JSON)
-
+**JSON output:**
 ```json
 [
   {
@@ -95,8 +109,24 @@ combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db
 ]
 ```
 
-### Inspect output (text)
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--db` | `.combfind.db` | Database to query |
+| `--top-k` | `5` | Number of results |
+| `--format` | `text` | `text` or `json` |
+| `--rerank` | off | Re-score results with LLM (requires `--llm-mode`) |
+| `--agentic` | off | Iterative query loop: LLM steers follow-up searches until satisfied (requires `--llm-mode`) |
+| `--agentic-limit` | `3` | Max iterations for `--agentic` |
+| `--llm-mode` | | LLM backend for `--rerank` / `--agentic`: `local`, `openai`, or `mlx` |
 
+### inspect: look up a symbol
+
+```bash
+combfind inspect auth.service.AuthService --db repo.db
+combfind inspect auth.service.AuthService auth.service.TokenService --db repo.db --format json
+```
+
+**Output:**
 ```
 auth.service.AuthService  (class, auth/service.py:10-80)
 concept:  Token Refresh  [implementation]
@@ -112,52 +142,57 @@ concept siblings (1):
   auth.service.AuthService.validate  [method]  auth/service.py
 ```
 
-### Init options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--db` | `<repo_path>/.combfind.db` | Output path |
-| `--llm-model` | auto-detected | Path to a GGUF model file (local mode only) |
-| `--llm-mode` | `local` | LLM backend: `local` (llama.cpp), `openai` (OpenAI-compatible API), or `mlx` (Apple Silicon) |
-| `--exclude-paths` | - | Paths to skip relative to repo root (repeatable) |
-| `--exclude-regex` | - | Regex matched against file paths to skip |
-| `--llm-workers` | `1` | Parallel LLM calls (useful with `--llm-mode openai`) |
-| `--docgen` | off | Generate LLM docstrings for undocumented symbols (slow) |
-| `--force` | off | Re-run all stages, ignoring the cache |
-
-### Query options
-
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--db` | `.combfind.db` | Database to query |
-| `--top-k` | 5 | Number of results to return |
-| `--format` | `text` | Output format: `text` or `json` |
-| `--rerank` | off | Re-score results with LLM for better precision (requires `--llm-mode`) |
-| `--agentic` | off | Run iterative query loop: LLM steers follow-up searches until satisfied (requires `--llm-mode`) |
-| `--agentic-limit` | `3` | Max iterations for `--agentic` mode |
-| `--llm-mode` | - | LLM backend for `--rerank` / `--agentic`: `local` or `openai` |
+| `--format` | `text` | `text` or `json` |
 
-### Inspect options
+## How it works
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--db` | `.combfind.db` | Database to query |
-| `--format` | `text` | Output format: `text` or `json` |
+The `init` pipeline runs six stages, each reading and writing to a SQLite file:
 
-## Environment variables
+1. **parse**: tree-sitter extracts files, symbols (signatures, line ranges, docstrings, imports)
+2. **index**: SCIP or tree-sitter heuristics populate a `references` table of calls, imports, and inheritance edges
+3. **embed**: sentence-transformers produces a vector per symbol
+4. **cluster**: symbols are grouped by package/directory, then sub-clustered with KMeans (~20 symbols per concept)
+5. **label**: a local LLM names and describes each cluster and assigns a structural role (`interface` | `implementation` | `orchestrator` | `entry_point` | `domain_model` | `infrastructure` | `cross_cutting`)
+6. **embed concepts**: sentence-transformers produces a vector per concept description
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
-| `COMBFIND_MODEL` | (auto-detected) | GGUF path for `local` mode / HF repo for `mlx` mode; equivalent to `--llm-model` |
-| `COMBFIND_LLM_BASE_URL` | - | Base URL for OpenAI-compatible API (e.g. `https://api.openai.com/v1`) |
-| `COMBFIND_LLM_API_KEY` | - | API key for the remote LLM |
-| `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name to use with `--llm-mode openai` |
-| `HF_HUB_OFFLINE` | - | Set to `1` to skip HuggingFace network checks and use cached embedding models only |
+At query time: embed the query, cosine search over concept embeddings, optionally rerank with LLM, expand top concepts to member symbols and 1-hop callers/callees, return ranked work areas.
 
-## Using a remote LLM API
+Stages are cached by a content hash of their inputs. When you re-run `init`, only stages affected by changed files are re-executed; the rest are skipped. Pass `--force` to rebuild from scratch.
 
-Pass `--llm-mode openai` to use any OpenAI-compatible API instead of a local model. Configure it with environment variables:
+## Performance
+
+On a 50k LOC Go codebase using Qwen2.5:7b via Ollama, the initial index builds in ~5 minutes. Reindexing is incremental, so subsequent runs are fast. Query time is around 7 seconds, most of which is loading the local model.
+
+The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 real bug fixes from a production Go codebase. That puts it above dense retrieval baselines like BM25 and E5-large (NDCG ~0.57-0.59 per [Practical Code RAG at Scale, 2025](https://arxiv.org/abs/2510.20609)), with no API costs. The state of the art (Agentless with frontier models) reaches ~90% recall@5, but requires expensive multi-step LLM pipelines per query. combfind trades some accuracy for being fast, cheap, and fully local.
+
+## How to query well
+
+combfind matches against concept descriptions, so structural queries outperform symptom descriptions.
+
+"Where are user creation request DTOs and their field definitions?" finds the right code immediately. "EmailVerified boolean gets rejected by the validator" does not, because the symptom vocabulary has no overlap with the code structure.
+
+When an agent receives a bug ticket, the right move is to translate the symptom into a structural question before querying: not *what went wrong*, but *where does this kind of code live*.
+
+## Supported languages
+
+Python, Go, Java. More languages can be added via tree-sitter grammars with no Python code changes.
+
+## Optional SCIP tools
+
+These are not required but produce more accurate call and import edges than the tree-sitter fallback:
+
+| Tool | Language | Install |
+|------|----------|---------|
+| `scip-go` | Go | `go install github.com/scip-code/scip-go/cmd/scip-go@latest` |
+| `scip-python` | Python | `npm install -g @sourcegraph/scip-python` |
+| `scip-java` | Java | [scip-java releases](https://github.com/sourcegraph/scip-java/releases) |
+
+## Using a remote LLM
+
+Pass `--llm-mode openai` to use any OpenAI-compatible API:
 
 ```bash
 export COMBFIND_LLM_BASE_URL=https://api.openai.com/v1
@@ -167,41 +202,19 @@ export COMBFIND_LLM_MODEL=gpt-4o-mini
 combfind init /path/to/repo --db repo.db --llm-mode openai
 ```
 
-Any API that speaks the OpenAI chat completions format works, including:
+Works with OpenAI, Ollama (`http://localhost:11434/v1`), LM Studio (`http://localhost:1234/v1`), and any other OpenAI-compatible server.
 
-- **OpenAI** — set `COMBFIND_LLM_BASE_URL=https://api.openai.com/v1`
-- **Ollama** — set `COMBFIND_LLM_BASE_URL=http://localhost:11434/v1` and `COMBFIND_LLM_API_KEY=ollama`
-- **LM Studio** — set `COMBFIND_LLM_BASE_URL=http://localhost:1234/v1`
-- **Any other OpenAI-compatible server** — point `COMBFIND_LLM_BASE_URL` at its `/v1` endpoint
+## Environment variables
 
-`--llm-model` is ignored in openai mode; the model is selected via `COMBFIND_LLM_MODEL`.
-
-## Clustering
-
-combfind groups symbols by their package/directory, then sub-clusters large packages using KMeans (targeting ~20 symbols per concept). This produces stable, interpretable concepts aligned with the codebase structure.
-
-For best results, exclude test files at index time:
-
-```bash
-combfind init . --exclude-regex '.*test.*'
-```
-
-## Supported languages
-
-Python, Go, Java. More languages can be added via tree-sitter grammars.
-
-## Optional dependencies
-
-These tools are not required but improve reference edge quality when installed:
-
-| Tool | Language | Install | Effect |
-|------|----------|---------|--------|
-| `scip-go` | Go | `go install github.com/scip-code/scip-go/cmd/scip-go@latest` | Type-resolved call/import edges between Go symbols |
-| `scip-python` | Python | `npm install -g @sourcegraph/scip-python` | Type-resolved call/import edges between Python symbols |
-| `scip-java` | Java | See [scip-java releases](https://github.com/sourcegraph/scip-java/releases) | Type-resolved call/import edges between Java symbols |
-
-Without them, combfind falls back to tree-sitter heuristics for import edges, which is less precise but works out of the box.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COMBFIND_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warning`, `error` |
+| `COMBFIND_MODEL` | auto-detected | GGUF path (local) or HF repo ID (mlx); equivalent to `--llm-model` |
+| `COMBFIND_LLM_BASE_URL` | | Base URL for OpenAI-compatible API |
+| `COMBFIND_LLM_API_KEY` | | API key for remote LLM |
+| `COMBFIND_LLM_MODEL` | `gpt-4o-mini` | Model name for `--llm-mode openai` |
+| `HF_HUB_OFFLINE` | | Set to `1` to use cached embedding models without network access |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commit conventions, and how the release pipeline works.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commit conventions, and the release pipeline.
