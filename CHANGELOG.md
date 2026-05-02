@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.3.0 (2026-05-02)
+
+### Features
+
+- Java language support
+  ([`8a115eb`](https://github.com/The127/combfind/commit/8a115ebeb5ec5c211fd323779445fe40a9694974))
+
+Add JavaIndexer with inheritance and import reference extraction, register it in get_indexer(), add
+  tests, and document scip-java in the optional dependencies table.
+
+tree_sitter_java was already a declared dependency and JavaWalker already existed; this completes
+  the index stage for Java.
+
+
 ## v1.2.0 (2026-05-02)
 
 ### Bug Fixes
