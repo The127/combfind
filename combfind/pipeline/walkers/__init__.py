@@ -5,11 +5,9 @@ from combfind.pipeline.walkers.python import PythonWalker
 
 
 class Walker(Protocol):
-    def extract_symbols(self, root, module_name: str) -> list[dict]:
-        ...
+    def extract_symbols(self, root, module_name: str) -> list[dict]: ...
 
-    def extract_skeleton(self, source: str, kind: str) -> str:
-        ...
+    def extract_skeleton(self, source: str, kind: str) -> str: ...
 
 
 _REGISTRY: dict[str, Walker] = {

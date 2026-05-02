@@ -17,32 +17,67 @@ def env(tmp_path):
     create_schema(conn)
 
     conn.execute(
-        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('auth/service.py','python','h1',100)"
+        "INSERT INTO files(path, language, content_hash, size_bytes) "
+        "VALUES ('auth/service.py','python','h1',100)"
     )
     file1 = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.execute(
-        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('auth/mock.py','python','h2',50)"
+        "INSERT INTO files(path, language, content_hash, size_bytes) "
+        "VALUES ('auth/mock.py','python','h2',50)"
     )
     file2 = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     conn.execute(
-        "INSERT INTO symbols(file_id, name, qualified_name, kind, signature, start_line, end_line, docstring)"
-        " VALUES (?,?,?,?,?,?,?,?)",
-        (file1, "AuthService", "auth.service.AuthService", "class", "class AuthService", 10, 80, "Handles auth."),
+        "INSERT INTO symbols"
+        "(file_id, name, qualified_name, kind, signature, "
+        "start_line, end_line, docstring) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        (
+            file1,
+            "AuthService",
+            "auth.service.AuthService",
+            "class",
+            "class AuthService",
+            10,
+            80,
+            "Handles auth.",
+        ),
     )
     auth_sym = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     conn.execute(
-        "INSERT INTO symbols(file_id, name, qualified_name, kind, signature, start_line, end_line, docstring)"
-        " VALUES (?,?,?,?,?,?,?,?)",
-        (file1, "validate", "auth.service.AuthService.validate", "method", "def validate(self, t)", 20, 35, None),
+        "INSERT INTO symbols"
+        "(file_id, name, qualified_name, kind, signature, "
+        "start_line, end_line, docstring) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        (
+            file1,
+            "validate",
+            "auth.service.AuthService.validate",
+            "method",
+            "def validate(self, t)",
+            20,
+            35,
+            None,
+        ),
     )
     validate_sym = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     conn.execute(
-        "INSERT INTO symbols(file_id, name, qualified_name, kind, signature, start_line, end_line, docstring)"
-        " VALUES (?,?,?,?,?,?,?,?)",
-        (file2, "MockAuthService", "auth.mock.MockAuthService", "class", "class MockAuthService(AuthService)", 5, 40, None),
+        "INSERT INTO symbols"
+        "(file_id, name, qualified_name, kind, signature, "
+        "start_line, end_line, docstring) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        (
+            file2,
+            "MockAuthService",
+            "auth.mock.MockAuthService",
+            "class",
+            "class MockAuthService(AuthService)",
+            5,
+            40,
+            None,
+        ),
     )
     mock_sym = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
@@ -64,13 +99,19 @@ def env(tmp_path):
 
     for sym_id, dist in [(auth_sym, 0.1), (validate_sym, 0.2)]:
         conn.execute(
-            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) VALUES (?,?,?)",
+            "INSERT INTO concept_members(concept_id, symbol_id, distance_to_centroid) "
+            "VALUES (?,?,?)",
             (concept0, sym_id, dist),
         )
 
     conn.commit()
     conn.close()
-    return {"db_path": db_path, "auth_sym": auth_sym, "validate_sym": validate_sym, "mock_sym": mock_sym}
+    return {
+        "db_path": db_path,
+        "auth_sym": auth_sym,
+        "validate_sym": validate_sym,
+        "mock_sym": mock_sym,
+    }
 
 
 def test_exact_match_returns_result(env):

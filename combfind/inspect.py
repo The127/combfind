@@ -62,7 +62,11 @@ def inspect_symbol(qualified_name: str, *, db_path: str) -> dict | None:
             (concept_row["name"], sym_id),
         ).fetchall()
         siblings = [
-            {"qualified_name": r["qualified_name"], "kind": r["kind"], "file": r["path"]}
+            {
+                "qualified_name": r["qualified_name"],
+                "kind": r["kind"],
+                "file": r["path"],
+            }
             for r in sibling_rows
         ]
 
@@ -78,11 +82,19 @@ def inspect_symbol(qualified_name: str, *, db_path: str) -> dict | None:
         "concept": concept_row["name"] if concept_row else None,
         "role": concept_row["role"] if concept_row else None,
         "callers": [
-            {"symbol": r["qualified_name"] or r["name"], "file": r["path"], "line": r["start_line"]}
+            {
+                "symbol": r["qualified_name"] or r["name"],
+                "file": r["path"],
+                "line": r["start_line"],
+            }
             for r in callers
         ],
         "callees": [
-            {"symbol": r["qualified_name"] or r["name"], "file": r["path"], "line": r["start_line"]}
+            {
+                "symbol": r["qualified_name"] or r["name"],
+                "file": r["path"],
+                "line": r["start_line"],
+            }
             for r in callees
         ],
         "concept_siblings": siblings,

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import combfind.pipeline.cluster as cluster_mod
 from combfind.db import create_schema, get_connection
@@ -15,13 +14,15 @@ def _make_db(tmp_path, file_symbol_map: dict[str, int]) -> str:
 
     for path, n in file_symbol_map.items():
         conn.execute(
-            "INSERT INTO files(path, language, content_hash, size_bytes) VALUES (?,?,?,?)",
+            "INSERT INTO files(path, language, content_hash, size_bytes) "
+            "VALUES (?,?,?,?)",
             (path, "python", path, 10),
         )
         file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         for i in range(n):
             conn.execute(
-                "INSERT INTO symbols(file_id, name, kind, start_line, end_line) VALUES (?,?,?,?,?)",
+                "INSERT INTO symbols(file_id, name, kind, start_line, end_line) "
+                "VALUES (?,?,?,?,?)",
                 (file_id, f"sym_{path}_{i}", "function", i + 1, i + 1),
             )
             sym_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -90,10 +91,14 @@ def test_idempotent(tmp_path):
 
 def test_build_config_written(tmp_path):
     import json
+
     db = _make_db(tmp_path, {"pkg/a.py": 5})
     cluster_mod.run(db)
     conn = get_connection(db)
-    cfg = {r["key"]: json.loads(r["value"]) for r in conn.execute("SELECT key, value FROM build_config").fetchall()}
+    cfg = {
+        r["key"]: json.loads(r["value"])
+        for r in conn.execute("SELECT key, value FROM build_config").fetchall()
+    }
     conn.close()
     assert "noise_strategy" in cfg
     assert "cluster_min_size" in cfg

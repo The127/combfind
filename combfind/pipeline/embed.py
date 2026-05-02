@@ -43,13 +43,16 @@ def run(db_path: str, *, embed_model: str = "all-MiniLM-L6-v2", **_) -> None:
         texts.append(" ".join(parts))
         ids.append(row["id"])
 
-    embeddings = model.encode(texts, batch_size=256, show_progress_bar=False, convert_to_numpy=True)
+    embeddings = model.encode(
+        texts, batch_size=256, show_progress_bar=False, convert_to_numpy=True
+    )
     embeddings = np.array(embeddings, dtype=np.float32)
     dim = embeddings.shape[1]
 
     for sym_id, emb in zip(ids, embeddings):
         conn.execute(
-            "INSERT OR REPLACE INTO symbol_embeddings(symbol_id, embedding) VALUES (?,?)",
+            "INSERT OR REPLACE INTO symbol_embeddings(symbol_id, embedding) "
+            "VALUES (?,?)",
             (sym_id, emb.tobytes()),
         )
 

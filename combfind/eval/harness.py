@@ -5,7 +5,9 @@ from combfind.eval.metrics import recall_at_k
 from combfind.query import query
 
 
-def run(*, db_path: str, fixtures_dir: str, ks: list[int]) -> dict[int, dict[str, float]]:
+def run(
+    *, db_path: str, fixtures_dir: str, ks: list[int]
+) -> dict[int, dict[str, float]]:
     """Run all fixtures and return aggregate recall@k scores.
 
     Returns {k: {"file_recall": float, "symbol_recall": float}}.
@@ -28,8 +30,12 @@ def run(*, db_path: str, fixtures_dir: str, ks: list[int]) -> dict[int, dict[str
             retrieved_symbols = [s for r in top_k for s in r["symbols"]]
 
             row[k] = {
-                "file_recall": recall_at_k(expected["files"], retrieved_files, k=len(retrieved_files)),
-                "symbol_recall": recall_at_k(expected["symbols"], retrieved_symbols, k=len(retrieved_symbols)),
+                "file_recall": recall_at_k(
+                    expected["files"], retrieved_files, k=len(retrieved_files)
+                ),
+                "symbol_recall": recall_at_k(
+                    expected["symbols"], retrieved_symbols, k=len(retrieved_symbols)
+                ),
             }
 
         per_fixture.append(row)
@@ -40,7 +46,10 @@ def run(*, db_path: str, fixtures_dir: str, ks: list[int]) -> dict[int, dict[str
         print(f"  {row['name']}:")
         for k in ks:
             s = row[k]
-            print(f"    @{k}: files={s['file_recall']:.2f}  symbols={s['symbol_recall']:.2f}")
+            print(
+                f"    @{k}: files={s['file_recall']:.2f}  "
+                f"symbols={s['symbol_recall']:.2f}"
+            )
 
     # Aggregate
     aggregate: dict[int, dict[str, float]] = {}
@@ -67,7 +76,9 @@ def _load_fixtures(root: Path) -> list[tuple[str, str, dict]]:
         input_file = d / "input.txt"
         expected_file = d / "expected.json"
         if not input_file.exists() or not expected_file.exists():
-            print(f"[combfind eval] skipping {d.name}: missing input.txt or expected.json")
+            print(
+                f"[combfind eval] skipping {d.name}: missing input.txt or expected.json"
+            )
             continue
         try:
             input_text = input_file.read_text().strip()

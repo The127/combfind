@@ -1,7 +1,7 @@
 import re
 
-from combfind.db import get_connection
 from combfind import telemetry
+from combfind.db import get_connection
 
 
 def run(db_path: str, **_) -> None:
@@ -35,7 +35,8 @@ def run(db_path: str, **_) -> None:
             )
             if dst_id and dst_id != src_id:
                 conn.execute(
-                    'INSERT OR IGNORE INTO "references"(src_symbol_id, dst_symbol_id, kind) VALUES (?,?,?)',
+                    'INSERT OR IGNORE INTO "references"'
+                    "(src_symbol_id, dst_symbol_id, kind) VALUES (?,?,?)",
                     (src_id, dst_id, "inherit"),
                 )
                 inserted += 1

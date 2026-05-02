@@ -3,8 +3,8 @@ import hashlib
 import json
 import time
 
-from combfind.db import get_connection
 from combfind import telemetry
+from combfind.db import get_connection
 
 # stages 2+3 are independent of each other; run them concurrently
 _PLAN: list[list[str]] = [
@@ -20,7 +20,15 @@ _ALL_STAGES = [s for group in _PLAN for s in group]
 
 
 def _stage_fn(name: str):
-    from combfind.pipeline import cluster, docgen, embed, embed_concepts, index, label, parse
+    from combfind.pipeline import (
+        cluster,
+        docgen,
+        embed,
+        embed_concepts,
+        index,
+        label,
+        parse,
+    )
 
     return {
         "parse": parse.run,
@@ -34,7 +42,9 @@ def _stage_fn(name: str):
 
 
 def _input_hash(conn, params: dict) -> str:
-    hashes = [r[0] for r in conn.execute("SELECT content_hash FROM files ORDER BY path")]
+    hashes = [
+        r[0] for r in conn.execute("SELECT content_hash FROM files ORDER BY path")
+    ]
     payload = json.dumps({"hashes": sorted(hashes), "params": params}, sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -43,10 +53,18 @@ def _is_cached(conn, stage: str, input_hash: str) -> bool:
     row = conn.execute(
         "SELECT status, input_hash FROM pipeline_runs WHERE stage = ?", (stage,)
     ).fetchone()
-    return row is not None and row["status"] == "done" and row["input_hash"] == input_hash
+    return (
+        row is not None and row["status"] == "done" and row["input_hash"] == input_hash
+    )
 
 
-def _mark(conn, stage: str, status: str, input_hash: str | None = None, params: dict | None = None):
+def _mark(
+    conn,
+    stage: str,
+    status: str,
+    input_hash: str | None = None,
+    params: dict | None = None,
+):
     conn.execute(
         """INSERT INTO pipeline_runs(stage, status, completed_at, input_hash, params)
            VALUES (?, ?, ?, ?, ?)
@@ -55,13 +73,20 @@ def _mark(conn, stage: str, status: str, input_hash: str | None = None, params: 
                completed_at=excluded.completed_at,
                input_hash=excluded.input_hash,
                params=excluded.params""",
-        (stage, status, int(time.time()) if status in ("done", "failed") else None,
-         input_hash, json.dumps(params) if params else None),
+        (
+            stage,
+            status,
+            int(time.time()) if status in ("done", "failed") else None,
+            input_hash,
+            json.dumps(params) if params else None,
+        ),
     )
     conn.commit()
 
 
-def _run_one(stage: str, db_path: str, input_hash: str, params: dict, backend=None) -> None:
+def _run_one(
+    stage: str, db_path: str, input_hash: str, params: dict, backend=None
+) -> None:
     conn = get_connection(db_path)
     if _is_cached(conn, stage, input_hash):
         telemetry.debug("stage cached, skipping", stage=stage)
@@ -91,7 +116,14 @@ def _run_one(stage: str, db_path: str, input_hash: str, params: dict, backend=No
         raise
 
 
-def run(db_path: str, stages: list[str] | None = None, force: bool = False, backend=None, docgen: bool = False, **params) -> None:
+def run(
+    db_path: str,
+    stages: list[str] | None = None,
+    force: bool = False,
+    backend=None,
+    docgen: bool = False,
+    **params,
+) -> None:
     conn = get_connection(db_path)
     if force:
         conn.execute("DELETE FROM pipeline_runs")
@@ -113,7 +145,10 @@ def run(db_path: str, stages: list[str] | None = None, force: bool = False, back
             _run_one(to_run[0], db_path, ih, params, backend=backend)
         else:
             with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_run)) as ex:
-                futures = {ex.submit(_run_one, s, db_path, ih, params, backend): s for s in to_run}
+                futures = {
+                    ex.submit(_run_one, s, db_path, ih, params, backend): s
+                    for s in to_run
+                }
                 for f in concurrent.futures.as_completed(futures):
                     f.result()  # re-raises on failure
 

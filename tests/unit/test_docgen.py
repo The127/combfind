@@ -16,16 +16,19 @@ def _make_db(tmp_path, n_symbols=2):
     create_schema(conn)
 
     conn.execute(
-        "INSERT INTO files(path, language, content_hash, size_bytes) VALUES ('a.py','python','h',10)"
+        "INSERT INTO files(path, language, content_hash, size_bytes) "
+        "VALUES ('a.py','python','h',10)"
     )
     file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.execute(
-        "INSERT INTO pipeline_runs(stage, status, params) VALUES ('parse','done','{\"repo_path\":null}')"
+        "INSERT INTO pipeline_runs(stage, status, params) "
+        "VALUES ('parse','done','{\"repo_path\":null}')"
     )
 
     for i in range(n_symbols):
         conn.execute(
-            "INSERT INTO symbols(file_id, name, kind, start_line, end_line) VALUES (?,?,?,?,?)",
+            "INSERT INTO symbols(file_id, name, kind, start_line, end_line) "
+            "VALUES (?,?,?,?,?)",
             (file_id, f"sym_{i}", "function", i + 1, i + 1),
         )
 
@@ -36,7 +39,9 @@ def _make_db(tmp_path, n_symbols=2):
 
 def test_docgen_writes_docstrings(tmp_path, monkeypatch):
     db_path = _make_db(tmp_path)
-    monkeypatch.setattr(docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON)
+    monkeypatch.setattr(
+        docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON
+    )
     docgen_mod.run(db_path, backend=FakeBackend())
 
     conn = get_connection(db_path)
@@ -60,7 +65,9 @@ def test_docgen_skips_existing_docstrings(tmp_path, monkeypatch):
             call_count += 1
             return "new doc"
 
-    monkeypatch.setattr(docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON)
+    monkeypatch.setattr(
+        docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON
+    )
     docgen_mod.run(db_path, backend=CountingBackend())
     assert call_count == 0
 
@@ -77,10 +84,14 @@ def test_docgen_skips_without_backend(tmp_path):
 
 def test_parallel_workers_generate_all(tmp_path, monkeypatch):
     db_path = _make_db(tmp_path, n_symbols=4)
-    monkeypatch.setattr(docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON)
+    monkeypatch.setattr(
+        docgen_mod, "_read_skeleton", lambda row, repo_path: _FAKE_SKELETON
+    )
     docgen_mod.run(db_path, backend=FakeBackend(), llm_workers=4)
 
     conn = get_connection(db_path)
-    null_count = conn.execute("SELECT COUNT(*) FROM symbols WHERE docstring IS NULL").fetchone()[0]
+    null_count = conn.execute(
+        "SELECT COUNT(*) FROM symbols WHERE docstring IS NULL"
+    ).fetchone()[0]
     conn.close()
     assert null_count == 0

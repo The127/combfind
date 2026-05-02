@@ -25,17 +25,23 @@ def _walk(node, module_name: str, class_stack: list[str], results: list[dict]) -
 
         signature = f"class {name}({bases_text})" if bases_text else f"class {name}"
         qualified = ".".join([module_name] + class_stack + [name])
-        range_node = node.parent if node.parent and node.parent.type == "decorated_definition" else node
+        range_node = (
+            node.parent
+            if node.parent and node.parent.type == "decorated_definition"
+            else node
+        )
         body = node.child_by_field_name("body")
-        results.append({
-            "name": name,
-            "qualified_name": qualified,
-            "kind": "class",
-            "signature": signature,
-            "start_line": range_node.start_point[0] + 1,
-            "end_line": range_node.end_point[0] + 1,
-            "docstring": _docstring(body),
-        })
+        results.append(
+            {
+                "name": name,
+                "qualified_name": qualified,
+                "kind": "class",
+                "signature": signature,
+                "start_line": range_node.start_point[0] + 1,
+                "end_line": range_node.end_point[0] + 1,
+                "docstring": _docstring(body),
+            }
+        )
         for child in node.named_children:
             _walk(child, module_name, class_stack + [name], results)
         return
@@ -52,19 +58,29 @@ def _walk(node, module_name: str, class_stack: list[str], results: list[dict]) -
         prefix = "async def " if is_async else "def "
         signature = f"{prefix}{name}{params_text}"
 
-        kind = "function" if not class_stack else ("constructor" if name == "__init__" else "method")
+        kind = (
+            "function"
+            if not class_stack
+            else ("constructor" if name == "__init__" else "method")
+        )
         qualified = ".".join([module_name] + class_stack + [name])
-        range_node = node.parent if node.parent and node.parent.type == "decorated_definition" else node
+        range_node = (
+            node.parent
+            if node.parent and node.parent.type == "decorated_definition"
+            else node
+        )
         body = node.child_by_field_name("body")
-        results.append({
-            "name": name,
-            "qualified_name": qualified,
-            "kind": kind,
-            "signature": signature,
-            "start_line": range_node.start_point[0] + 1,
-            "end_line": range_node.end_point[0] + 1,
-            "docstring": _docstring(body),
-        })
+        results.append(
+            {
+                "name": name,
+                "qualified_name": qualified,
+                "kind": kind,
+                "signature": signature,
+                "start_line": range_node.start_point[0] + 1,
+                "end_line": range_node.end_point[0] + 1,
+                "docstring": _docstring(body),
+            }
+        )
         return
 
     for child in node.named_children:
@@ -73,6 +89,7 @@ def _walk(node, module_name: str, class_stack: list[str], results: list[dict]) -
 
 def _class_skeleton(source: str) -> str:
     import re
+
     lines = source.splitlines()
     result = []
     skip_until_indent: int | None = None
@@ -87,7 +104,9 @@ def _class_skeleton(source: str) -> str:
                 continue
             skip_until_indent = None
         if re.match(r"(async\s+)?def\s+", stripped) and indent > 0:
-            result.append(line.rstrip(":") + ":" if not line.rstrip().endswith(":") else line)
+            result.append(
+                line.rstrip(":") + ":" if not line.rstrip().endswith(":") else line
+            )
             result.append(" " * (indent + 4) + "...")
             skip_until_indent = indent
         else:
