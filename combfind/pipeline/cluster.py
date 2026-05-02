@@ -83,7 +83,7 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
 def _member_hash(conn, symbol_ids: list) -> str:
     placeholders = ",".join("?" * len(symbol_ids))
     rows = conn.execute(
-        f"SELECT content_hash FROM symbols WHERE id IN ({placeholders}) ORDER BY content_hash",
+        f"SELECT COALESCE(content_hash, '') FROM symbols WHERE id IN ({placeholders}) ORDER BY content_hash",
         symbol_ids,
     ).fetchall()
     return hashlib.sha256("".join(r[0] for r in rows).encode()).hexdigest()
