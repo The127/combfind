@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v1.5.1 (2026-05-02)
+
+### Bug Fixes
+
+- Bypass cache check for parse stage so disk changes are detected
+  ([`b868657`](https://github.com/The127/combfind/commit/b8686578efcdcc1564d645e8f7bfe28fb0e8c4e8))
+
+the parse stage's cache key was derived from files.content_hash in the db, but parse is the only
+  stage that updates that column. once the db had any rows, parse would always see "no change" and
+  skip, so new and modified files on disk were never picked up without --force. parse now always
+  runs; its per-file hash check keeps the no-op case cheap, and downstream stages still cascade
+  correctly via the post-parse hash recompute.
+
+### Documentation
+
+- Add concept roles section, tighten performance copy and eval caveat
+  ([`c5b6811`](https://github.com/The127/combfind/commit/c5b68116240eec1f09ecb7bd0a45f440cd4d6a44))
+
+- Remove external paper citation from performance section
+  ([`2c95365`](https://github.com/The127/combfind/commit/2c95365169c7e914479da4588044820ed5f75875))
+
+
 ## v1.5.0 (2026-05-02)
 
 ### Bug Fixes
