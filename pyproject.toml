@@ -37,7 +37,7 @@ mlx = ["mlx-lm>=0.18"]
 hdbscan = ["hdbscan>=0.8"]
 scip = ["protobuf>=5.0"]
 output = ["rich>=13.0", "tqdm>=4.66"]
-gleam = ["tree-sitter-language-pack>=0.7"]
+gleam = ["tree-sitter-language-pack==1.6.2"]
 dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.7"]
 
 [project.scripts]
