@@ -323,15 +323,25 @@ def _print_verdict(
         if n >= 2:
             sigma = statistics.stdev(diffs)
             ci_half = 1.96 * sigma / math.sqrt(n)
+            ci_pct = 100.0 * ci_half / mean_b if mean_b > 0 else 0.0
             ci_str = f"{ci_half:.4f}s"
+            ci_pct_str = f"{ci_pct:.1f}%"
         else:
             ci_str = "n/a (single pair)"
+            ci_pct_str = "n/a"
         print(
             f"pairs={n}  baseline_mean={mean_b:.4f}s  patch_mean={mean_p:.4f}s  "
             f"mean_diff={mean_d:+.4f}s ({pct:+.1f}%)  95% CI half-width={ci_str}"
         )
+        # One-liner intended for inclusion in the commit body so the morning
+        # reviewer can `git log --grep="SPRT-verdict:"` to skim outcomes.
+        print(
+            f"SPRT-verdict: {verdict} mode={args.mode} pairs={n} "
+            f"mean_diff={pct:+.2f}% ci=±{ci_pct_str}"
+        )
     else:
         print("(no trials)")
+        print(f"SPRT-verdict: {verdict} mode={args.mode} pairs=0")
 
     return {"ACCEPT": 0, "REJECT": 1, "INDETERMINATE": 1}[verdict]
 

@@ -41,7 +41,8 @@ For each round:
 
 6. **Read the verdict**:
    - `ACCEPT` (exit 0): the change passes the gate AND is at least Δ
-     faster. **Keep the commit.**
+     faster. **Keep the commit.** Amend the commit message to record
+     the verdict (see step 7).
    - `REJECT` (exit 1): the change passes the gate but is not Δ
      faster (or the runner hit the hard cap inconclusive). **Run
      `git reset --hard HEAD~1`** to drop the commit, then pick a
@@ -54,7 +55,17 @@ For each round:
    - Exit 3 (USAGE / INTERNAL): something is wrong with the runner's
      environment. Read the message; it's not a verdict on your patch.
 
-7. **Repeat.** No clever stacking — start each round from a clean
+7. **Record the verdict** in the commit body so the morning reviewer
+   can pull a one-line verdict per commit with
+   `git log --grep="SPRT-verdict:"`. Format:
+   ```
+   SPRT-verdict: ACCEPT mode=cold pairs=N mean_diff=+X.XX% ci=±Y.YY%
+   ```
+   `git commit --amend --no-edit` on a separate line at the end of
+   the body works fine; the runner prints exactly this format on its
+   final line for easy copy-paste.
+
+8. **Repeat.** No clever stacking — start each round from a clean
    working tree.
 
 ## Editable scope
