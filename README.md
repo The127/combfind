@@ -158,7 +158,7 @@ The `init` pipeline runs six stages, each reading and writing to a SQLite file:
 2. **index**: SCIP or tree-sitter heuristics populate a `references` table of calls, imports, and inheritance edges
 3. **embed**: sentence-transformers produces a vector per symbol
 4. **cluster**: symbols are grouped by package/directory, then sub-clustered with KMeans (~20 symbols per concept)
-5. **label**: a local LLM names and describes each cluster and assigns a structural role (`interface` | `implementation` | `orchestrator` | `entry_point` | `domain_model` | `infrastructure` | `cross_cutting`)
+5. **label**: a local LLM names and describes each cluster and assigns a structural role (see [Concept roles](#concept-roles) below)
 6. **embed concepts**: sentence-transformers produces a vector per concept description
 
 At query time: embed the query, cosine search over concept embeddings, optionally rerank with LLM, expand top concepts to member symbols and 1-hop callers/callees, return ranked symbols and code regions.
@@ -167,11 +167,13 @@ Stages are cached by a content hash of their inputs. When you re-run `init`, onl
 
 ## Performance
 
-On a 50k LOC Go codebase using Qwen2.5:7b via Ollama, the initial index builds in ~5 minutes. Query time is around 7 seconds, most of which is loading the local model.
+All numbers below are from my own ~50k LOC Go codebase using Qwen2.5:7b via Ollama. Treat them as directional, not a cross-repo benchmark.
+
+Initial index builds in ~5 minutes. Query time is around 7 seconds, most of which is loading the local model on the first call. In `--agentic` mode the model is loaded once and kept warm across all iterations, so a 3-iteration run is roughly 7s + 2x steer time, not 3x7s.
 
 **Incremental reindexing is fast.** When a handful of files change, re-running `init` takes around 30 seconds; only the stages affected by changed files are re-executed. The index is also crash-safe: progress is committed to SQLite in batches within each stage, so if a run is interrupted it picks up close to where it left off rather than starting over.
 
-The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 real bug fixes from a production Go codebase. That puts it above dense retrieval baselines like BM25 and E5-large (NDCG ~0.57-0.59 per [Practical Code RAG at Scale, 2025](https://arxiv.org/abs/2510.20609)), with no API costs. The state of the art (Agentless with frontier models) reaches ~90% recall@5, but requires expensive multi-step LLM pipelines per query. combfind trades some accuracy for being fast, cheap, and fully local.
+The goal is not to replace careful code reading. It is to give an agent a cheap orientation pass so it knows which 3-5 files to read rather than all 500. On that goal, combfind achieves file_recall@3 of **0.75** on structural queries with `--rerank`, evaluated against 10 hand-picked bug fixes from that codebase (n=10, single repo). That puts it above dense retrieval baselines like BM25 and E5-large (NDCG ~0.57-0.59 per [Practical Code RAG at Scale, 2025](https://arxiv.org/abs/2510.20609)), with no API costs. The state of the art (Agentless with frontier models) reaches ~90% recall@5, but requires expensive multi-step LLM pipelines per query. combfind trades some accuracy for being fast, cheap, and fully local.
 
 ## How to query well
 
@@ -180,6 +182,20 @@ combfind matches against concept descriptions, so structural queries outperform 
 "Where are user creation request DTOs and their field definitions?" finds the right code immediately. "EmailVerified boolean gets rejected by the validator" does not, because the symptom vocabulary has no overlap with the code structure.
 
 When an agent receives a bug ticket, the right move is to translate the symptom into a structural question before querying: not *what went wrong*, but *where does this kind of code live*.
+
+## Concept roles
+
+Every concept cluster is tagged with one of seven roles. An agent that finds `TokenRefresh` tagged `interface` knows to also look at all `implementation` siblings before touching anything. Not because it's smart, but because combfind surfaced them.
+
+| Role | Meaning |
+|------|---------|
+| `interface` | Contract or protocol definition; changes here propagate to all implementations |
+| `implementation` | Concrete implementation of an interface; there may be siblings that also need updating |
+| `orchestrator` | Coordinates other components; high fan-out, changes ripple broadly |
+| `entry_point` | Top-level handlers (HTTP routes, CLI commands, queue consumers) |
+| `domain_model` | Core data structures and business entities |
+| `infrastructure` | I/O, persistence, external service clients |
+| `cross_cutting` | Utilities, logging, auth middleware used throughout |
 
 ## Supported languages
 
