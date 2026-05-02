@@ -186,6 +186,17 @@ combfind init . --exclude-regex '.*test.*'
 
 Python, Go. More languages can be added via tree-sitter grammars.
 
+## Optional dependencies
+
+These tools are not required but improve reference edge quality when installed:
+
+| Tool | Language | Install | Effect |
+|------|----------|---------|--------|
+| `scip-go` | Go | `go install github.com/scip-code/scip-go/cmd/scip-go@latest` | Type-resolved call/import edges between Go symbols |
+| `scip-python` | Python | `npm install -g @sourcegraph/scip-python` | Type-resolved call/import edges between Python symbols |
+
+Without them, combfind falls back to tree-sitter heuristics for import edges, which is less precise but works out of the box.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commit conventions, and how the release pipeline works.

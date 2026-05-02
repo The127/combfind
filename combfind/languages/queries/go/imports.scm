@@ -1,0 +1,3 @@
+; import "path" or import alias "path"
+(import_spec
+  path: (interpreted_string_literal) @import.path)
