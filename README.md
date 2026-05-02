@@ -18,6 +18,9 @@ pip install "combfind[mlx]"
 
 # Remote OpenAI-compatible API
 pip install "combfind[openai]"
+
+# Gleam support
+pip install "combfind[gleam]"
 ```
 
 Download the default local model (~2.5 GB):
@@ -178,7 +181,7 @@ When an agent receives a bug ticket, the right move is to translate the symptom 
 
 ## Supported languages
 
-Python, Go, Java.
+Python, Go, Java, Gleam.
 
 ## Optional SCIP tools
 
