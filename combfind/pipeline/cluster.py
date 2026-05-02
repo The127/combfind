@@ -29,6 +29,8 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
         pkg = str(Path(row["path"]).parent)
         packages[pkg].append(row)
 
+    prev_centroids = _load_prev_centroids(conn)
+
     conn.execute("DELETE FROM concepts")
     conn.execute("DELETE FROM concept_members")
 
@@ -45,7 +47,7 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
             _insert_concept(conn, symbol_ids, embeddings, list(range(len(pkg_rows))))
             total_concepts += 1
         else:
-            labels = _kmeans(embeddings, k)
+            labels = _kmeans(embeddings, k, init_centroids=prev_centroids.get(pkg))
             for cluster_id in range(k):
                 indices = [i for i, label in enumerate(labels) if label == cluster_id]
                 if indices:
@@ -66,14 +68,37 @@ def run(db_path: str, *, noise: str = "singleton", **_) -> None:
     telemetry.info("cluster complete", concepts=total_concepts, packages=len(packages))
 
 
-def _kmeans(embeddings: np.ndarray, k: int) -> np.ndarray:
+def _load_prev_centroids(conn) -> dict[str, np.ndarray]:
+    """Return previous centroids keyed by package, for warm-starting KMeans."""
+    rows = conn.execute(
+        """SELECT c.id, c.centroid, f.path
+           FROM concepts c
+           JOIN concept_members cm ON cm.concept_id = c.id
+           JOIN symbols s ON s.id = cm.symbol_id
+           JOIN files f ON f.id = s.file_id
+           GROUP BY c.id"""
+    ).fetchall()
+    by_pkg: dict[str, list] = defaultdict(list)
+    for row in rows:
+        pkg = str(Path(row["path"]).parent)
+        by_pkg[pkg].append(np.frombuffer(row["centroid"], dtype=np.float32))
+    return {pkg: np.array(cs) for pkg, cs in by_pkg.items()}
+
+
+def _kmeans(embeddings: np.ndarray, k: int, init_centroids: np.ndarray | None = None) -> np.ndarray:
     try:
         from sklearn.cluster import KMeans
 
-        km = KMeans(n_clusters=k, n_init=3, random_state=42)
+        if init_centroids is not None and init_centroids.shape == (k, embeddings.shape[1]):
+            init: str | np.ndarray = init_centroids
+            n_init = 1
+        else:
+            init = "k-means++"
+            n_init = 3
+
+        km = KMeans(n_clusters=k, init=init, n_init=n_init, random_state=42)  # type: ignore[arg-type]
         return km.fit_predict(embeddings)
     except ImportError:
-        # fallback: assign round-robin if sklearn unavailable (shouldn't happen)
         return np.array([i % k for i in range(len(embeddings))])
 
 
