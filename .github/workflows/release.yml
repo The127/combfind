@@ -22,7 +22,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install
-        run: pip install -e ".[dev]" tree-sitter-go
+        run: pip install -e ".[dev,gleam]" tree-sitter-go
 
       - name: Test
         run: pytest
