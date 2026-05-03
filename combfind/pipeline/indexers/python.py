@@ -12,15 +12,31 @@ from combfind.pipeline.indexers import (
 )
 
 
+_BUILD_FILES = ("pyproject.toml", "setup.py", "setup.cfg")
+
+
+def _has_build_tool(repo: Path) -> bool:
+    """True if the repo root has a Python project descriptor.
+
+    scip-python requires one of these to index a project; without one
+    the subprocess fails with no useful output.
+    """
+    return any((repo / name).exists() for name in _BUILD_FILES)
+
+
 class PythonIndexer(BaseIndexer):
     def run(self, conn, *, repo_path: str | None = None) -> int:
         inserted = _inherit(conn)
         if not repo_path:
             return inserted
-        if shutil.which("scip-python"):
+        if shutil.which("scip-python") and _has_build_tool(Path(repo_path)):
             inserted += self._run_scip(conn, repo_path)
         else:
-            telemetry.warning("scip-python not found, falling back to tree-sitter imports")
+            telemetry.warning(
+                "scip-python unavailable for this repo "
+                "(missing binary or no pyproject.toml/setup.py/setup.cfg); "
+                "falling back to tree-sitter imports"
+            )
             inserted += self._run_treesitter(conn, repo_path)
         return inserted
 
