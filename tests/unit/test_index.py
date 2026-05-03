@@ -33,6 +33,19 @@ class AlsoStandalone:
     pass
 """
 
+ANIMAL_MOD = '''\
+class Animal:
+    """Base animal."""
+    pass
+'''
+
+DOG_MOD = '''\
+from zoo.animals import Animal
+
+class Dog(Animal):
+    pass
+'''
+
 
 @pytest.fixture
 def env(tmp_path):
@@ -97,3 +110,20 @@ def test_idempotent(env):
     index_run(env[1])
     refs_second = _refs(env[1])
     assert refs_first == refs_second
+
+
+def test_import_reference(tmp_path):
+    src = tmp_path / "zoo"
+    src.mkdir()
+    (src / "__init__.py").write_text("")
+    (src / "animals.py").write_text(ANIMAL_MOD)
+    (src / "dogs.py").write_text(DOG_MOD)
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+    parse_run(db_path, repo_path=str(tmp_path))
+    index_run(db_path, repo_path=str(tmp_path))
+    refs = _refs(db_path)
+    # tree-sitter fallback: dogs.py imports Animal from zoo.animals
+    assert any(dst == "Animal" and kind == "import" for _, dst, kind in refs)

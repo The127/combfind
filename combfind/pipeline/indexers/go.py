@@ -13,6 +13,18 @@ from combfind.pipeline.indexers import (
 )
 
 
+_BUILD_FILES = ("go.mod", "go.work")
+
+
+def _has_build_tool(repo: Path) -> bool:
+    """True if the repo root has a go.mod or go.work file.
+
+    scip-go requires one of these to index a project; without one the
+    subprocess panics with no useful output.
+    """
+    return any((repo / name).exists() for name in _BUILD_FILES)
+
+
 class GoIndexer(BaseIndexer):
     def run(self, conn, *, repo_path: str | None = None) -> int:
         if not repo_path:
@@ -21,9 +33,13 @@ class GoIndexer(BaseIndexer):
             "SELECT 1 FROM files WHERE language = 'go' LIMIT 1"
         ).fetchone():
             return 0
-        if shutil.which("scip-go"):
+        if shutil.which("scip-go") and _has_build_tool(Path(repo_path)):
             return self._run_scip(conn, repo_path)
-        telemetry.warning("scip-go not found, falling back to tree-sitter imports")
+        telemetry.warning(
+            "scip-go unavailable for this repo "
+            "(missing binary or no go.mod/go.work); "
+            "falling back to tree-sitter imports"
+        )
         return self._run_treesitter(conn, repo_path)
 
     def _run_scip(self, conn, repo_path: str) -> int:
