@@ -20,25 +20,39 @@ _ALL_STAGES = [s for group in _PLAN for s in group]
 
 
 def _stage_fn(name: str):
-    from combfind.pipeline import (
-        cluster,
-        docgen,
-        embed,
-        embed_concepts,
-        index,
-        label,
-        parse,
-    )
+    # Lazy: only import the stage module actually being run. The embed and
+    # embed_concepts modules pull in sentence_transformers (PyTorch), which
+    # is ~1-2s of import time we don't want to pay if we're only running
+    # parse+index (e.g., from a partial-stage tool or test harness).
+    if name == "parse":
+        from combfind.pipeline import parse
 
-    return {
-        "parse": parse.run,
-        "index": index.run,
-        "docgen": docgen.run,
-        "embed": embed.run,
-        "cluster": cluster.run,
-        "label": label.run,
-        "embed_concepts": embed_concepts.run,
-    }[name]
+        return parse.run
+    if name == "index":
+        from combfind.pipeline import index
+
+        return index.run
+    if name == "docgen":
+        from combfind.pipeline import docgen
+
+        return docgen.run
+    if name == "embed":
+        from combfind.pipeline import embed
+
+        return embed.run
+    if name == "cluster":
+        from combfind.pipeline import cluster
+
+        return cluster.run
+    if name == "label":
+        from combfind.pipeline import label
+
+        return label.run
+    if name == "embed_concepts":
+        from combfind.pipeline import embed_concepts
+
+        return embed_concepts.run
+    raise ValueError(f"unknown stage: {name!r}")
 
 
 def _input_hash(conn, params: dict) -> str:
