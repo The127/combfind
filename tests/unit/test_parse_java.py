@@ -119,3 +119,63 @@ def test_enum_constants_extracted(env):
     run(env[1], repo_path=env[0])
     syms = _symbols(env[1])
     assert syms["com.example.auth.Color.RED"]["kind"] == "enum_constant"
+
+
+def test_overloaded_methods_survive_reparse(tmp_path):
+    src_dir = tmp_path / "src" / "calc"
+    src_dir.mkdir(parents=True)
+    java_path = src_dir / "Calc.java"
+
+    initial = b"""\
+package com.example.calc;
+
+public class Calc {
+    public int add(int a, int b) { return a + b; }
+    public String add(String a, String b) { return a + b; }
+}
+"""
+    java_path.write_bytes(initial)
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    create_schema(conn)
+    conn.close()
+
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        "SELECT signature FROM symbols WHERE qualified_name = ?",
+        ("com.example.calc.Calc.add",),
+    ).fetchall()
+    conn.close()
+    sigs = {r["signature"] for r in rows}
+    assert sigs == {"int add(int a, int b)", "String add(String a, String b)"}
+
+    edited = b"""\
+package com.example.calc;
+
+public class Calc {
+    /** Sum two ints. */
+    public int add(int a, int b) { return a + b; }
+    public String add(String a, String b) { return a + b; }
+}
+"""
+    java_path.write_bytes(edited)
+    run(db_path, repo_path=str(tmp_path))
+
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        "SELECT signature, docstring FROM symbols WHERE qualified_name = ?",
+        ("com.example.calc.Calc.add",),
+    ).fetchall()
+    conn.close()
+    sigs = {r["signature"] for r in rows}
+    assert sigs == {"int add(int a, int b)", "String add(String a, String b)"}, (
+        f"overload lost or duplicated on reparse: {sigs}"
+    )
+    by_sig = {r["signature"]: r["docstring"] for r in rows}
+    assert (
+        by_sig["int add(int a, int b)"]
+        and "Sum two ints" in by_sig["int add(int a, int b)"]
+    )
+    assert by_sig["String add(String a, String b)"] is None

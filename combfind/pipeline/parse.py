@@ -100,7 +100,8 @@ def run(
             if existing_file:
                 file_id = existing_file["id"]
                 conn.execute(
-                    "UPDATE files SET content_hash = ?, language = ?, size_bytes = ? WHERE id = ?",
+                    "UPDATE files SET content_hash = ?, language = ?, "
+                    "size_bytes = ? WHERE id = ?",
                     (content_hash, lang, len(content), file_id),
                 )
                 _diff_symbols(conn, file_id, new_symbols)
@@ -167,25 +168,27 @@ def _insert_symbol(conn, file_id: int, sym: dict) -> None:
 
 
 def _diff_symbols(conn, file_id: int, new_symbols: list[dict]) -> None:
-    existing = {
-        row["qualified_name"]: row
-        for row in conn.execute(
-            "SELECT id, qualified_name, content_hash, start_line, end_line "
-            "FROM symbols WHERE file_id = ?",
-            (file_id,),
-        ).fetchall()
-    }
+    existing: dict[tuple[str, str | None], dict] = {}
+    for row in conn.execute(
+        "SELECT id, qualified_name, signature, content_hash, start_line, end_line "
+        "FROM symbols WHERE file_id = ?",
+        (file_id,),
+    ).fetchall():
+        existing[(row["qualified_name"], row["signature"])] = row
 
-    new_qnames: set[str] = set()
+    new_keys: set[tuple[str, str | None]] = set()
     for sym in new_symbols:
-        qname = sym["qualified_name"]
-        new_qnames.add(qname)
+        key = (sym["qualified_name"], sym["signature"])
+        new_keys.add(key)
         sym_hash = _symbol_hash(sym)
 
-        if qname in existing:
-            old = existing[qname]
+        if key in existing:
+            old = existing[key]
             if old["content_hash"] == sym_hash:
-                if old["start_line"] != sym["start_line"] or old["end_line"] != sym["end_line"]:
+                if (
+                    old["start_line"] != sym["start_line"]
+                    or old["end_line"] != sym["end_line"]
+                ):
                     conn.execute(
                         "UPDATE symbols SET start_line = ?, end_line = ? WHERE id = ?",
                         (sym["start_line"], sym["end_line"], old["id"]),
@@ -196,8 +199,8 @@ def _diff_symbols(conn, file_id: int, new_symbols: list[dict]) -> None:
         else:
             _insert_symbol(conn, file_id, sym)
 
-    for qname, old in existing.items():
-        if qname not in new_qnames:
+    for key, old in existing.items():
+        if key not in new_keys:
             conn.execute("DELETE FROM symbols WHERE id = ?", (old["id"],))
 
 
@@ -222,14 +225,18 @@ def _build_parsers() -> dict:
                 mod = importlib.import_module(lang_def.grammar)
                 parsers[lang_name] = Parser(Language(mod.language()))
             except (ImportError, Exception) as exc:
-                telemetry.warning("skipping language", language=lang_name, reason=str(exc))
+                telemetry.warning(
+                    "skipping language", language=lang_name, reason=str(exc)
+                )
         elif lang_def.pack_name:
             try:
                 from tree_sitter_language_pack import get_parser
 
                 parsers[lang_name] = get_parser(lang_def.pack_name)
             except Exception as exc:
-                telemetry.warning("skipping language", language=lang_name, reason=str(exc))
+                telemetry.warning(
+                    "skipping language", language=lang_name, reason=str(exc)
+                )
     return parsers
 
 

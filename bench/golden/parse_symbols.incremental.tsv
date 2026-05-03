@@ -1,0 +1,128 @@
+src/com/example/tasks/App.java	com.example.tasks.App	class App	class	4164ffc533f574057528321310118940c2dec2ee97eccde7c263772fc8987379
+src/com/example/tasks/App.java	com.example.tasks.App.App	App(Queue<Task> queue, WorkerPool pool, Store<Task> store)	constructor	f34baae20c8d4d730e195e039dc0fab2bc0bda6ceb2426fd20351ed169e9f705
+src/com/example/tasks/App.java	com.example.tasks.App.main	void main(String[] args)	method	9c85e72fef414080f90f2dd5bf1b13bbd4294b2623f50fe7037c84dbdff4af52
+src/com/example/tasks/App.java	com.example.tasks.App.pause	void pause()	method	978c59ca199c39b532ebc2a3642405038d09a23e208b028318486f192bf1f1ca
+src/com/example/tasks/App.java	com.example.tasks.App.resume	void resume()	method	6b294abc203094cbf241489ca6660557ae2c44cb77ed84de105f64fa0220bc7d
+src/com/example/tasks/App.java	com.example.tasks.App.start	void start()	method	9053d80c69095bdecd0dcf7901a06373846d79213b58280bcac071e5ea4ff0be
+src/com/example/tasks/App.java	com.example.tasks.App.stop	void stop()	method	1cf5741a24780d2365f0bc7e5921d8f36e80e4f516facbae25dda6d0e9626a10
+src/com/example/tasks/exceptions/QueueException.java	com.example.tasks.exceptions.QueueException	class QueueException extends TaskException	class	d131aec8533bf7b4601b5409c3f6386bfcc63da3c31eaea14977221cdee8e5bf
+src/com/example/tasks/exceptions/QueueException.java	com.example.tasks.exceptions.QueueException.QueueException	QueueException(String message)	constructor	29f65f6435c2754c9fc3635aa1a84f06ae1b1af1fa3f92a9623a0b7ed2042209
+src/com/example/tasks/exceptions/QueueException.java	com.example.tasks.exceptions.QueueException.QueueException	QueueException(String message, Throwable cause)	constructor	ef02630086b090e2e7d1ac7cf6a8d7c3925e31b6374a9c2fb1b4a63b52196067
+src/com/example/tasks/exceptions/TaskException.java	com.example.tasks.exceptions.TaskException	class TaskException extends RuntimeException	class	614cb2bae946e26ac3968782131f0b4f016955b054cc3e84c7890f3e7fd19cbf
+src/com/example/tasks/exceptions/TaskException.java	com.example.tasks.exceptions.TaskException.TaskException	TaskException(String message)	constructor	2a65ed677b85107ce1449e7b98934d25c805f7ef25ae9f97a9b2f42871db40f5
+src/com/example/tasks/exceptions/TaskException.java	com.example.tasks.exceptions.TaskException.TaskException	TaskException(String message, Throwable cause)	constructor	dc3d27c8de73c39c955b4f9162e5329ff043e32fb491f1fa7e7048bdfd61af47
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority	enum Priority	enum	2b9d103fe4370328e2bc4a2c51edb3cd5c75923068f721d52957f2328ada7e99
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.CRITICAL	CRITICAL	enum_constant	ca0d4fd7ca8916d80fc0b3e66199dd359f8228096e2dc3a5e9ce242b5f8a644a
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.HIGH	HIGH	enum_constant	edb77070e79af722a4808b533e623262100725ffeb98c7c3e727665988e71a1a
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.LOW	LOW	enum_constant	7b0a7ce873d7abd0b1eb90ba9dcd8721eaa8b4ec46f190ea7168e80fbc68fce4
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.NORMAL	NORMAL	enum_constant	a19c30bc6bcc7fca44c4b991a0548a0037fbad4f1bce344a026f7903919d5236
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.Priority	Priority(int weight)	constructor	047aa9c73ca2bc556166c9e25c09b452c4abdc2163f2ba203d106419d0b5f56c
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.compareToReverse	int compareToReverse(Priority other)	method	43a45114ca6b1d12bde088295531d01f4b673242b32a66e496bb3c050dc410d9
+src/com/example/tasks/model/Priority.java	com.example.tasks.model.Priority.weight	int weight()	method	bc83140570046aeae02ef26fb919631ef55b78c74e0361153127fbfeb51de354
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task	class Task	class	8c0bc7c8b18ca69a787958c70368ce6426c7c6a22df5fa31d1dde1db99397cf5
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.Task	Task(TaskId id, String payload)	constructor	7b1439e6be1fc9880d4258b4c3a6eee51b3a2cd1b3e9f0b70e5d8eafcef2e315
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.Task	Task(TaskId id, String payload, Priority priority)	constructor	63b296d5faf73dfa5fbf1b3af0d4442aae75832af7190087b8327133691b38c3
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.createdAt	Instant createdAt()	method	4a24d2caa28762aab0aa2c53f4e6ef621f7f8ea2771479e80b9943959de8d223
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.id	TaskId id()	method	e9933b1a51c417a1b76c9ff543605ff09e533c485b1da39c9f0fb57d62252dc1
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.payload	String payload()	method	629bc71d0f60962e1f5696e77e58c1c3b600fff2bff1c2ebb5019b1d3fbf52b5
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.priority	Priority priority()	method	6a25d19dd19c85438cddb18feaccceb76ca94faa66b61f8f9781f7ae9d3b38b0
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.state	TaskState state()	method	cea529ca7415e3dd02ac6fe5924a9b15aa7d5691118027e11026594d1bff27e8
+src/com/example/tasks/model/Task.java	com.example.tasks.model.Task.transition	void transition(TaskState next)	method	ca3c583f05227f5dfae22e6755d837907b29e09344c04fadfe3fa34a6e4a7823
+src/com/example/tasks/model/TaskId.java	com.example.tasks.model.TaskId	record TaskId(UUID value)	record	64a90250a16d6aaf37b48e3b8a8df5712b851b7b8d185ca79982e31c0eafb2b2
+src/com/example/tasks/model/TaskId.java	com.example.tasks.model.TaskId.fresh	TaskId fresh()	method	4c923badbd124f912d7ba7e1b534f74ae845e17d42a2273b0835d8d65a62c984
+src/com/example/tasks/model/TaskId.java	com.example.tasks.model.TaskId.parse	TaskId parse(String s)	method	1ca9e3ab52d35c37b205ca54473ff712cebc8b9cfd235ea29e0571eae43b1c4a
+src/com/example/tasks/model/TaskId.java	com.example.tasks.model.TaskId.toString	String toString()	method	357cde597a79ab294570e9f6ec403c43564f02b42faccefaabd176708fc1d317
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState	enum TaskState	enum	e791db7de7920887775e30d4605c600ded0df240cf7f7ae2070bdfa2d7b9fe42
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.CANCELLED	CANCELLED	enum_constant	6de425c11730c40005f8723a88481dda99c349c043c0702c9fbf6ded6c6dfd68
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.FAILED	FAILED	enum_constant	4ed7b87838e0a7d043279d00387486bd69eaa17b7f9aa910d328c9149fedc4d4
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.PENDING	PENDING	enum_constant	fef12eb06e5244f5f283327ea091ab8447da60cbba86900626adc66fcaf8ee5d
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.RUNNING	RUNNING	enum_constant	7857d87dd7cda322be17767660a4bd8935710d68b761c74a247b41c59f04aa3c
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.SUCCEEDED	SUCCEEDED	enum_constant	d735c86429a2e3734e0f3d3b7673b0c5f65c522b039eb6b7ea54fd0079e58794
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.canTransitionTo	boolean canTransitionTo(TaskState next)	method	3bda1425a3e27c143d7b8971681c1448117ed2990944afafe7dfdac8c41eb3b1
+src/com/example/tasks/model/TaskState.java	com.example.tasks.model.TaskState.isTerminal	boolean isTerminal()	method	edc06a69f93c2639873984df94d8adbf7f8260a537f97fed34af1ab3fd86c49e
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue	class ConcurrentQueue implements Queue<T>	class	1f2374df9807ae92c6148859552de2821f11d0e93054db597dd5031db69e66f3
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.isEmpty	boolean isEmpty()	method	5483980451ce91833e41836a0490cc2866162d47d95c886e3939bba11e3e81df
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.offer	void offer(Collection<? extends T> items)	method	759785a650c638363b060adae804359f89b6fb6c7ff72a4ba5637ad3605feb5f
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.offer	void offer(T item)	method	f1213f9dce0417bda3349c2859c60b22cfcc6b4f1744c9a4a0e625f748c0d865
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.offer	void offer(T item, long timeoutMillis)	method	6365cdb180fda7e869548856c6a47bf96fd31ee2bcad7e9577b34af09e0dd2d4
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.peek	T peek()	method	20867f9542aa3f89d4bac18078a05b49889978bcadf09827c3f727370a8cbd72
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.poll	T poll()	method	4c28d5e2e2debbc4fb9f00b65f7b504eb37228875d72bb96491b74d66fe003d2
+src/com/example/tasks/queue/ConcurrentQueue.java	com.example.tasks.queue.ConcurrentQueue.size	int size()	method	2379a02fb6e948b1d050b14211e7a399153decaa4076ce46a61d306be7b40255
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue	class PriorityQueue implements Queue<T>	class	7392acf342eb70f53256758c1bec39694f4d4aa051dbe7e0a5bfb52b58307f77
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.PriorityQueue	PriorityQueue()	constructor	be28626bd924d73f04cb346d3a7d807578134d784c54bb3739cec9e456237d4d
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.PriorityQueue	PriorityQueue(Comparator<? super T> comparator)	constructor	2c0cdb2ae6ae58eaa405d7c0424ebb7f1938a4e83f8a52f8aaae51d9089eafd6
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.isEmpty	boolean isEmpty()	method	2fe1ab1cd977678c4cd332a22b26665059f0dd1121861c4b27010fc602444683
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.offer	void offer(T item)	method	ef908da3a1b514bf260f418bec6cecd8294fa71ed15432cab32b4ac1ad2568bb
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.peek	T peek()	method	91db950a459e6d18feb08fa1c87f816735d2ac51e6ad3d99c5e87669ec97b975
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.poll	T poll()	method	a861eb8295be2afc3d405602c34f188647dcce308194fafde5f52f297bc384b9
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.promote	void promote(String id, Priority newPriority)	method	a3c5bf2cff12d349245d95194507a75537a603074579038b5b1a97043cc98fa7
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.promote	void promote(Task task, Priority newPriority)	method	dc089da0d222cfe2eb7e4d8e4a6b5d464fd9d9ce20ba46e1f4561dd43e109181
+src/com/example/tasks/queue/PriorityQueue.java	com.example.tasks.queue.PriorityQueue.size	int size()	method	2d757efef367907884985ed4e5f1acf06bd661b063c8fd51f73144b407f8af23
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue	interface Queue	interface	b413716ab2489e4be4fa17ed0039738bc9e76c3cbd7d65997286bf3e18131789
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue.isEmpty	boolean isEmpty()	method	5a1b3b9e7d2aa72bd57adc914137b6e4d1170b3006b817fe4221df8ac3309ac0
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue.offer	void offer(T item)	method	4cb481aeb12d415ebf67062b10ee759fbdeb4f3c81bab3f0ccb1c5fe180648e8
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue.peek	T peek()	method	ba591141495d96aae3619665a8913352a988c5198fbe0ea657c88355344f8c7c
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue.poll	T poll()	method	4229300e4ec6a259bb4c930fc6d87f5f7addbe9eb9ab875205e594197e6ccf11
+src/com/example/tasks/queue/Queue.java	com.example.tasks.queue.Queue.size	int size()	method	c779146efbd15cdec7a8037c98602e4f5029b39f93d7f1a286f94c1aeae933e5
+src/com/example/tasks/queue/QueueFactory.java	com.example.tasks.queue.QueueFactory	class QueueFactory	class	62fcb529c13aaa79d605241bc20bc5b6cd6e4a15e73fb597bc3e4fe46c8aab01
+src/com/example/tasks/queue/QueueFactory.java	com.example.tasks.queue.QueueFactory.QueueFactory	QueueFactory()	constructor	11c6dbfd4e87e39960ae27d8b43bac92206a9e70d54115940f6dc4bb6becb2e6
+src/com/example/tasks/queue/QueueFactory.java	com.example.tasks.queue.QueueFactory.create	Queue<Task> create()	method	65893f747cf9db29d217eae1dd93c2e1ba0dadb5dea55b1fb53f451b5358bdae
+src/com/example/tasks/queue/QueueFactory.java	com.example.tasks.queue.QueueFactory.create	Queue<Task> create(String kind)	method	26ff995cae3e5eda78cd27e9d51de2c1656069dcc1648f5c984246fd5cd0362d
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore	class FileStore implements Store<V>	class	999fc9176df782d2db4396e6641674c8547fb4386ccbfc9b9e37a35d2dbbb1b4
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.FileStore	FileStore(Path root)	constructor	99e35082727e2afc735c4422bdef0c580f35e00013dc0c9ae117c37faa4c5b44
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.FileStore	FileStore(String root)	constructor	a586337b11683a27fc836da6316536e01580f4274a3ff32cb1d44ee80b01a73b
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.delete	boolean delete(String key)	method	6b9cb771f4190b3c105c2496a063152e9d337de4633811557803c80d1466f512
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.get	Optional<V> get(String key)	method	971bf0897ea54ae608bd35a5ba9328dc824568846ebbeeaf80d35cb166903085
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.put	void put(String key, V value)	method	933a13391db24e98a48bd7060a57ebbe30a35ab11590582dc119dec383be4826
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.root	Path root()	method	287ba1af231aa23d5db4956f84ff4b502161a53fbb53d4b69bd5b868b7b8e5c8
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.size	int size()	method	3a1179c36243d2331fbb703ab260b94ac103ec1a3ddd592fc80505958b79add2
+src/com/example/tasks/store/FileStore.java	com.example.tasks.store.FileStore.values	Iterable<V> values()	method	a80753e252ed77a1c4738616719e7cd40d2ee225601ba4be45e34982f5363d65
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore	class MemoryStore implements Store<V>	class	60302328c2c484eaa8548751d56c8bf657917fc1645a913bf25bc3edd0e57aaa
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.delete	boolean delete(String key)	method	7b0ed72f061a6b750c6e38feab06ef0ae403d742a2af02e8b33b3c80b0053578
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.get	Optional<V> get(String key)	method	776be169eda300b19747e4f57799aefb983eca3834f6ed007b1676d49a22f955
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.put	void put(Map<String, V> entries)	method	adbaa0c7c9862379d252e0526a1a6b5627628c732348e3f24ab467434256c57a
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.put	void put(String key, V value)	method	130a27158888093705ab9e39e0ef08ec61f3c3cf7bf07fd93945803db8098766
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.size	int size()	method	fe6ed267eb3a971ebf92c4ff65198976ac647cef2160c87d09fd3d71dba7a718
+src/com/example/tasks/store/MemoryStore.java	com.example.tasks.store.MemoryStore.values	Iterable<V> values()	method	5056680eca14194ef5f69b2c8b7c42cd249b6931622f0c6cf99057283de6f47c
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store	interface Store	interface	f8811e0bd1d4372f2b2a971f1d336648af23ece815061de078914cd0e3bd6dc8
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store.delete	boolean delete(String key)	method	62e6ed80e376c0d93405df6f523cc3b4fd7d812997cc36e9d0c9aafb263c1a4d
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store.get	Optional<V> get(String key)	method	b7cf0565d13e9f2275639dcb59bf76b60a043fff938efdfa7e33e1273494c15a
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store.put	void put(String key, V value)	method	4370914e58056466dd9ccc0abbfac7ad3ac8c287282468ace043c9a356900b26
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store.size	int size()	method	0781fe5e248002f72b42f8acf302f924fa9796da3c63930676a070ae7aec709a
+src/com/example/tasks/store/Store.java	com.example.tasks.store.Store.values	Iterable<V> values()	method	03fe89b645aef547e49606bd27e062bebac2706780166bb0ebcaeb60bc1233d4
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format	class Format	class	fa0f4142a30062d033ff5ba3e6bb2ce8a0b2e3d58119f6455577ebe413e2648d
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.Format	Format()	constructor	a74da2f65a000d34c0c47d8728da28a43224b0ef0a38f8b52d9e45238bad390f
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.hex	String hex(byte[] bytes)	method	ab2bd49aa2fe815a8ac3957bef720ce09e6d0072e210cfc2749829c5d59989cb
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.hex	String hex(int v)	method	f3f8b718c1f1ed9ea453f3d5c28c817056c40299dd31e4c0b589c8b83f86c90f
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.hex	String hex(long v)	method	87b9d9259ceeb209332c1dbfe118c6fff401f2e60d7621f98057b7ac9571b2a3
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.pad	String pad(String s, int width)	method	6fb89bc342249590bf30faaa1260b8ac631192212222a18873c87924129f0827
+src/com/example/tasks/util/Format.java	com.example.tasks.util.Format.pad	String pad(String s, int width, char fill)	method	1abef1f5a8e6d2b045b74403cb320000ba5a596711e5bcab2a85d742ea4e665b
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math	class Math	class	35301038ec2e135d9f8c05708a6cb27cfbea59a652e1931f9ccb3d92d22a02a5
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.Math	Math()	constructor	d97f24f3c9751c286aad0e428b3585ea0973f223c230338cddef4b7ce729aed8
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	double add(double a, double b)	method	804f3ec314d2d53ea3686ce004b1178aaf62d6e3a0b339a2bd129428e996bfe6
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	int add(int a, int b)	method	50ec7416369f8c45bf36377d3f8bc2875e9be4fffad1bbbdbcafc508cc5a53bb
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	int add(int a, int b, int c)	method	c9239f17e3d74e80e0e93cac2fc7a1b23fe97299b43e65344f5286d385778c93
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.add	long add(long a, long b)	method	e619e076642dd79aedbe6dcc2345dda05d2a9cb898b46561448d987e9e7aa9b1
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.max	double max(double a, double b)	method	cb539eb8f460c5e0bd7760fe64b71ae93e1a5f76f5412bb1fba9272e71a65943
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.max	int max(int a, int b)	method	116cabaad5d061b01db6766063be2bd021b3942ebca731f8fcfedb5db6ab0731
+src/com/example/tasks/util/Math.java	com.example.tasks.util.Math.max	long max(long a, long b)	method	ff459388d08489de832a5b246fd29a7d136735e400ce10c22d1b2247f0b201be
+src/com/example/tasks/util/Strings.java	com.example.tasks.util.Strings	class Strings	class	270f8b54cc61b75c072778a75e52299942fb90b3bcc8ddc06a439f67417c3af2
+src/com/example/tasks/util/Strings.java	com.example.tasks.util.Strings.Strings	Strings()	constructor	2a0adc4e72adc2d7ff7042d22918dce384ae75b8699ba9da97757763f6de8497
+src/com/example/tasks/util/Strings.java	com.example.tasks.util.Strings.defaultIfBlank	String defaultIfBlank(String s, String fallback)	method	07f779b5953e0798f15aafb1322ef2276b51fcd2b54040b0ca6f0c6e9de8d65c
+src/com/example/tasks/util/Strings.java	com.example.tasks.util.Strings.isBlank	boolean isBlank(String s)	method	8c5e055e3a709494220b05d847bb1e9059141f6e7d693b1e6c7f31d3c4d21dc3
+src/com/example/tasks/util/Strings.java	com.example.tasks.util.Strings.truncate	String truncate(String s, int max)	method	ab16026b5bdab280c65c05194bd8dd452ada64d6641f0e99d8a224efb87080b6
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker	class Worker implements Runnable	class	07191fd39324bdba8f89a9414531a157eff4c9643cce086f0731f689f93e051e
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.Worker	Worker(int id, Queue<Task> queue, Store<Task> store)	constructor	3a3fcafcf576c9643e7cdc108a2b0c80e6e7339a93463f58dae68ad6104d455a
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.execute	void execute(Task task)	method	8908ec6651bd3b9a2a81f87c9b57b2b921e7e5cc7a5d3dfd940e777b457dff33
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.id	int id()	method	e1a9c9fe6356e090593dabfca0c1aa3a31ed1aa374e74a744ce2eef7223e623a
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.run	void run()	method	413ec919dedf621cbd7b8880face28cae416620e394e27b37735628cb063ea9d
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.sleep	void sleep(long ms)	method	25e02aacabb9756c955bbbfcd00b361af8843db2e751f65fab97f6ae7125fb72
+src/com/example/tasks/worker/Worker.java	com.example.tasks.worker.Worker.stop	void stop()	method	4bcd41cdba889aad08cbf4c09743ffa5f391d8b04598c52d2b701741f8067820
+src/com/example/tasks/worker/WorkerConfig.java	com.example.tasks.worker.WorkerConfig	record WorkerConfig(int workers, long shutdownMillis)	record	b631139bdbef5316e9cf76ca731824247e04ed67417d330a41846b709a7cdf29
+src/com/example/tasks/worker/WorkerConfig.java	com.example.tasks.worker.WorkerConfig.defaults	WorkerConfig defaults()	method	12c341011a76850a997f50c62501aa633eeefbc2bfa45997001a7ef48bbf4a1e
+src/com/example/tasks/worker/WorkerConfig.java	com.example.tasks.worker.WorkerConfig.withWorkers	WorkerConfig withWorkers(int n)	method	9abb977d7a21a591801d9ff8e9f4d84332aa0ba099b319a872b51dd00e85d26f
+src/com/example/tasks/worker/WorkerPool.java	com.example.tasks.worker.WorkerPool	class WorkerPool	class	dc40c5c7aa0d3dd3c00af50d6c999475693e66822a3de3a2730dca7b37e2c5a0
+src/com/example/tasks/worker/WorkerPool.java	com.example.tasks.worker.WorkerPool.WorkerPool	WorkerPool(Queue<Task> queue, Store<Task> store, WorkerConfig config)	constructor	9d191e60f38aea82327e63af0d6e596fbcd6479d3a73c945164d6f52a438a750
+src/com/example/tasks/worker/WorkerPool.java	com.example.tasks.worker.WorkerPool.activeCount	int activeCount()	method	12874213dd289f425a52f43218ffd8d2aa7f2e11d9c5656a2cb0f100a269ab7a
+src/com/example/tasks/worker/WorkerPool.java	com.example.tasks.worker.WorkerPool.start	void start()	method	ab458c6d3b011658603d4d092b671ed3f9137d16de2124be179852c96c2f5575
+src/com/example/tasks/worker/WorkerPool.java	com.example.tasks.worker.WorkerPool.stop	void stop()	method	df444b13e43a3e5473ab3017873edd2f5933cabb5ea875596ddad0878d071b83
