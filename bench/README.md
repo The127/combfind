@@ -1,9 +1,10 @@
 # `bench/` — Autoresearch harness for combfind init speed
 
-This directory is the SPRT-gated experiment loop described in
-`plans/autoresearch-harness.md`. It is the **frozen scoring side** of
-the loop: the agent edits `combfind/pipeline/`, the harness here
-decides whether the change is correct and (sufficiently) faster.
+A Karpathy-style autoresearch loop, gated by chess-engine-style SPRT,
+for autonomously optimizing combfind's `init` speed. This directory is
+the **frozen scoring side** of the loop: the agent edits
+`combfind/pipeline/`, the harness here decides whether the change is
+correct and (sufficiently) faster.
 
 ```
 bench/
@@ -89,13 +90,14 @@ review, not paired timing.
 - **ACCEPT case**: lazy stage imports in `_stage_fn` (commit 505604c),
   86% cold-init speedup on the bench fixture. SPRT verdict in 1
   counted pair.
-- **REJECT case**: lazy parser construction (commit d271e5b, reverted
-  by e3caad8), +0.3% within noise floor. SPRT verdict in 8 pairs.
+- **REJECT case**: lazy parser construction in `parse.py:_build_parsers`,
+  +0.3% within noise floor. SPRT verdict in 8 pairs (not in this
+  branch — experiment was rejected and the commit dropped).
 - **CORRECTNESS case** that surfaced a real bug: skipping scip-java
   when no build descriptor was present. The gate rejected — but with
   *more* refs than golden, exposing that the existing fallback never
-  ran when scip-java failed at runtime. Documented in
-  `plans/scip-java-fallback-bug.md`, fixed in commit 947c3ea.
+  ran when scip-java failed at runtime. Fixed separately in the
+  scip-java fallback PR.
 
 ## Known limitations
 

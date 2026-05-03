@@ -105,8 +105,8 @@ on `pytest tests/unit` separately for those.
 
 ## Known suspects
 
-Pulled from `plans/incremental-reindex-investigation.md`. These are
-hypotheses, not confirmed wins.
+Hypotheses, not confirmed wins. Worth trying, but the bench may or
+may not be sensitive enough to confirm each.
 
 1. **`pipeline/run.py:_input_hash`** treats `params` as part of the
    hash, which includes `repo_path` and `llm_workers`. Changing
