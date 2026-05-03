@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.5.2 (2026-05-03)
+
+### Bug Fixes
+
+- Handle Java method overloads in incremental reparse
+  ([#6](https://github.com/The127/combfind/pull/6),
+  [`5ec27bc`](https://github.com/The127/combfind/commit/5ec27bc0fa40a93c123bffbb0c4b8b48aae6049a))
+
+_diff_symbols keyed `existing` on qualified_name alone, which collides for Java overloads like
+  Foo.bar(int) and Foo.bar(String) (the walker omits arity from qualified_name). On reparse of an
+  edited file the dict collapsed both rows to one, the hash check then deleted the wrong overload's
+  row, leaving an orphan and silently dropping a valid sibling.
+
+Key existing on (qualified_name, signature) instead. Fresh-parse already inserted overloads as
+  distinct rows; this fix makes the reparse path match.
+
+
 ## v1.5.1 (2026-05-02)
 
 ### Bug Fixes
