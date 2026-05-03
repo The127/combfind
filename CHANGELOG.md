@@ -1,6 +1,73 @@
 # CHANGELOG
 
 
+## v1.5.3 (2026-05-03)
+
+### Bug Fixes
+
+- Tree-sitter fallback runs when scip-java fails at runtime
+  ([#7](https://github.com/The127/combfind/pull/7),
+  [`816267a`](https://github.com/The127/combfind/commit/816267aa94bb3cef65414338b5357e6046c8074b))
+
+* fix(java): tree-sitter fallback runs when scip-java fails at runtime
+
+JavaIndexer.run claimed to fall back to tree-sitter when scip-java wasn't available, but the
+  existing branch only triggered when shutil.which("scip-java") returned None. When scip-java was on
+  PATH but failed at runtime (e.g., no Maven/Gradle/sbt/mill descriptor), _run_scip silently
+  returned 0 and the tree-sitter else-branch never ran — see plans/scip-java-fallback-bug.md.
+
+Predict scip-java's runtime requirement cheaply: only invoke it when the repo root has one of the
+  build descriptors it understands. If either the binary is missing OR no descriptor is present,
+  fall through to the tree-sitter import extractor.
+
+Side benefits: - Saves ~400ms per init for Java repos without a build tool (the failing scip-java
+  subprocess is no longer invoked). - Closes the long-standing
+  tests/unit/test_index_java.py::test_import_reference failure.
+
+* fix(go,python): tree-sitter fallback runs when scip binary fails at runtime
+
+same bug as the java fix: shutil.which() returning truthy is not enough, scip-go panics without
+  go.mod and scip-python errors without a python project descriptor. gate the scip path on the build
+  descriptor's presence so the tree-sitter fallback actually runs.
+
+---------
+
+Co-authored-by: karo <karolin.kostial@gmail.com>
+
+- **pipeline**: Only stage-cache-invalidate on output-affecting params
+  ([#9](https://github.com/The127/combfind/pull/9),
+  [`65e7238`](https://github.com/The127/combfind/commit/65e72383c1ff91d468ff046d9dfe793b24e9fbbd))
+
+_input_hash hashed the full **params dict, including operational keys that don't change pipeline
+  output: repo_path, llm_model, llm_workers, docgen flag (already excluded as kwarg). The result:
+  changing parallelism or moving the DB to a different cwd invalidated every stage's cache, forcing
+  a full re-run on data that was identical.
+
+Filter to the keys that actually affect output: exclude_paths and exclude_regex. Adding new
+  output-affecting params (e.g., a future walker config flag) is a one-line allowlist update.
+
+Tracked in plans/incremental-reindex-investigation.md as suspect #1. The bench harness can't measure
+  this directly (each trial uses a fresh DB), but it's a correctness fix that means re-running
+  combfind init with --llm-workers tweaked no longer triggers a full re-parse.
+
+### Performance Improvements
+
+- **pipeline**: Lazy-import stage modules in _stage_fn
+  ([#8](https://github.com/The127/combfind/pull/8),
+  [`6cfbe3f`](https://github.com/The127/combfind/commit/6cfbe3ff2ea8401c2f9fae2ff80e7690072b8f72))
+
+_stage_fn imported all seven stage modules unconditionally on every call, even when only one stage
+  was being executed. embed and embed_concepts pull in sentence_transformers (PyTorch), which is
+  1-2s of import time at the very top of any combfind invocation.
+
+Switch to per-stage imports: only the stage module actually being returned gets imported. For full
+  `combfind init` runs nothing changes (every stage runs eventually); for partial-stage runs
+  (tooling, tests, the bench harness) the unused-stage imports are skipped.
+
+The bench harness invokes parse+index only; on this fixture, score.py in a fresh Python process
+  drops dramatically once the heavy stage modules are not imported.
+
+
 ## v1.5.2 (2026-05-03)
 
 ### Bug Fixes
