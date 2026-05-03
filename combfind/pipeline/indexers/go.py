@@ -1,58 +1,20 @@
 import importlib
 import re
-import shutil
 from pathlib import Path
 
-from combfind import telemetry
-from combfind.pipeline.indexers import (
-    BaseIndexer,
-    containing_symbol,
-    extract_scip_refs,
-    parse_scip_index,
-    run_scip_binary,
-)
-
-
-_BUILD_FILES = ("go.mod", "go.work")
-
-
-def _has_build_tool(repo: Path) -> bool:
-    """True if the repo root has a go.mod or go.work file.
-
-    scip-go requires one of these to index a project; without one the
-    subprocess panics with no useful output.
-    """
-    return any((repo / name).exists() for name in _BUILD_FILES)
+from combfind.pipeline.indexers import BaseIndexer
 
 
 class GoIndexer(BaseIndexer):
-    def run(self, conn, *, repo_path: str | None = None) -> int:
-        if not repo_path:
-            return 0
-        if not conn.execute(
-            "SELECT 1 FROM files WHERE language = 'go' LIMIT 1"
-        ).fetchone():
-            return 0
-        if shutil.which("scip-go") and _has_build_tool(Path(repo_path)):
-            return self._run_scip(conn, repo_path)
-        telemetry.warning(
-            "scip-go unavailable for this repo "
-            "(missing binary or no go.mod/go.work); "
-            "falling back to tree-sitter imports"
-        )
-        return self._run_treesitter(conn, repo_path)
+    language = "go"
+    scip_binary = "scip-go"
+    scip_args = ("index", "./...", "--output")
+    build_files = ("go.mod", "go.work")
+    build_files_label = "go.mod/go.work"
 
-    def _run_scip(self, conn, repo_path: str) -> int:
-        raw = run_scip_binary(
-            ["scip-go", "index", "./...", "--output"],
-            repo_path,
-        )
-        if raw is None:
-            return 0
-        index = parse_scip_index(raw)
-        if index is None:
-            return 0
-        return extract_scip_refs(conn, index, "go", _scip_symbol_to_qname)
+    @staticmethod
+    def _scip_symbol_to_qname(symbol: str) -> str | None:
+        return _scip_symbol_to_qname(symbol)
 
     def _run_treesitter(self, conn, repo_path: str) -> int:
         try:

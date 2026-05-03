@@ -1,65 +1,32 @@
 import importlib
 import re
-import shutil
 from pathlib import Path
 
-from combfind import telemetry
-from combfind.pipeline.indexers import (
-    BaseIndexer,
-    extract_scip_refs,
-    parse_scip_index,
-    run_scip_binary,
-)
-
-_BUILD_FILES = (
-    "pom.xml",
-    "build.gradle",
-    "build.gradle.kts",
-    "settings.gradle",
-    "settings.gradle.kts",
-    "build.sbt",
-    "build.mill",
-    "build.sc",
-)
-
-
-def _has_build_tool(repo: Path) -> bool:
-    """True if the repo root has a Maven/Gradle/sbt/mill descriptor.
-
-    scip-java requires one of these to index a project; without one the
-    subprocess fails after ~400ms with no useful output.
-    """
-    return any((repo / name).exists() for name in _BUILD_FILES)
+from combfind.pipeline.indexers import BaseIndexer
 
 
 class JavaIndexer(BaseIndexer):
-    def run(self, conn, *, repo_path: str | None = None) -> int:
-        inserted = _inherit(conn)
-        if not repo_path:
-            return inserted
-        if not conn.execute(
-            "SELECT 1 FROM files WHERE language = 'java' LIMIT 1"
-        ).fetchone():
-            return inserted
-        if shutil.which("scip-java") and _has_build_tool(Path(repo_path)):
-            inserted += self._run_scip(conn, repo_path)
-        else:
-            telemetry.warning(
-                "scip-java unavailable for this repo "
-                "(missing binary or no Maven/Gradle/sbt/mill descriptor); "
-                "falling back to tree-sitter imports"
-            )
-            inserted += self._run_treesitter(conn, repo_path)
-        return inserted
+    language = "java"
+    scip_binary = "scip-java"
+    scip_args = ("index", "--output")
+    build_files = (
+        "pom.xml",
+        "build.gradle",
+        "build.gradle.kts",
+        "settings.gradle",
+        "settings.gradle.kts",
+        "build.sbt",
+        "build.mill",
+        "build.sc",
+    )
+    build_files_label = "Maven/Gradle/sbt/mill descriptor"
 
-    def _run_scip(self, conn, repo_path: str) -> int:
-        raw = run_scip_binary(["scip-java", "index", "--output"], repo_path)
-        if raw is None:
-            return 0
-        index = parse_scip_index(raw)
-        if index is None:
-            return 0
-        return extract_scip_refs(conn, index, "java", _scip_symbol_to_qname)
+    @staticmethod
+    def _scip_symbol_to_qname(symbol: str) -> str | None:
+        return _scip_symbol_to_qname(symbol)
+
+    def _inherit(self, conn) -> int:
+        return _inherit(conn)
 
     def _run_treesitter(self, conn, repo_path: str) -> int:
         try:

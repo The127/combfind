@@ -1,56 +1,23 @@
 import importlib
 import re
-import shutil
 from pathlib import Path
 
-from combfind import telemetry
-from combfind.pipeline.indexers import (
-    BaseIndexer,
-    extract_scip_refs,
-    parse_scip_index,
-    run_scip_binary,
-)
-
-
-_BUILD_FILES = ("pyproject.toml", "setup.py", "setup.cfg")
-
-
-def _has_build_tool(repo: Path) -> bool:
-    """True if the repo root has a Python project descriptor.
-
-    scip-python requires one of these to index a project; without one
-    the subprocess fails with no useful output.
-    """
-    return any((repo / name).exists() for name in _BUILD_FILES)
+from combfind.pipeline.indexers import BaseIndexer
 
 
 class PythonIndexer(BaseIndexer):
-    def run(self, conn, *, repo_path: str | None = None) -> int:
-        inserted = _inherit(conn)
-        if not repo_path:
-            return inserted
-        if shutil.which("scip-python") and _has_build_tool(Path(repo_path)):
-            inserted += self._run_scip(conn, repo_path)
-        else:
-            telemetry.warning(
-                "scip-python unavailable for this repo "
-                "(missing binary or no pyproject.toml/setup.py/setup.cfg); "
-                "falling back to tree-sitter imports"
-            )
-            inserted += self._run_treesitter(conn, repo_path)
-        return inserted
+    language = "python"
+    scip_binary = "scip-python"
+    scip_args = ("index", "--project-name=combfind", "--quiet", "--output")
+    build_files = ("pyproject.toml", "setup.py", "setup.cfg")
+    build_files_label = "pyproject.toml/setup.py/setup.cfg"
 
-    def _run_scip(self, conn, repo_path: str) -> int:
-        raw = run_scip_binary(
-            ["scip-python", "index", "--project-name=combfind", "--quiet", "--output"],
-            repo_path,
-        )
-        if raw is None:
-            return 0
-        index = parse_scip_index(raw)
-        if index is None:
-            return 0
-        return extract_scip_refs(conn, index, "python", _scip_symbol_to_qname)
+    @staticmethod
+    def _scip_symbol_to_qname(symbol: str) -> str | None:
+        return _scip_symbol_to_qname(symbol)
+
+    def _inherit(self, conn) -> int:
+        return _inherit(conn)
 
     def _run_treesitter(self, conn, repo_path: str) -> int:
         try:

@@ -1,18 +1,86 @@
 import bisect
 import os
+import shutil
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Callable
+from pathlib import Path
+from typing import Callable, ClassVar, final
 
 from combfind import telemetry
 
 
 class BaseIndexer(ABC):
-    @abstractmethod
+    """Template Method for language indexers.
+
+    Subclasses declare metadata (`language`, `scip_binary`, `scip_args`,
+    `build_files`) and implement `_run_treesitter`. The base class owns
+    the dispatch: only run SCIP when its binary is on PATH AND the repo
+    has the required build descriptor; otherwise fall through to
+    tree-sitter. This is the invariant — don't reimplement `run` in a
+    subclass.
+    """
+
+    language: ClassVar[str]
+    scip_binary: ClassVar[str | None] = None
+    scip_args: ClassVar[tuple[str, ...]] = ()
+    build_files: ClassVar[tuple[str, ...]] = ()
+    build_files_label: ClassVar[str] = ""
+
+    @final
     def run(self, conn, *, repo_path: str | None = None) -> int:
-        """Extract references and insert into the references table. Returns count inserted."""
-        ...
+        inserted = self._inherit(conn)
+        if not repo_path:
+            return inserted
+        if not conn.execute(
+            "SELECT 1 FROM files WHERE language = ? LIMIT 1",
+            (self.language,),
+        ).fetchone():
+            return inserted
+        if self._can_run_scip(repo_path):
+            inserted += self._run_scip(conn, repo_path)
+        else:
+            telemetry.warning(
+                f"{self.scip_binary or 'scip'} unavailable for this repo "
+                f"(missing binary or no {self.build_files_label}); "
+                f"falling back to tree-sitter imports"
+            )
+            inserted += self._run_treesitter(conn, repo_path)
+        return inserted
+
+    def _can_run_scip(self, repo_path: str) -> bool:
+        if not self.scip_binary or not shutil.which(self.scip_binary):
+            return False
+        if self.build_files and not any(
+            (Path(repo_path) / name).exists() for name in self.build_files
+        ):
+            return False
+        return True
+
+    def _run_scip(self, conn, repo_path: str) -> int:
+        assert self.scip_binary, "scip path entered without scip_binary"
+        raw = run_scip_binary(
+            [self.scip_binary, *self.scip_args],
+            repo_path,
+        )
+        if raw is None:
+            return 0
+        index = parse_scip_index(raw)
+        if index is None:
+            return 0
+        return extract_scip_refs(conn, index, self.language, self._scip_symbol_to_qname)
+
+    def _inherit(self, conn) -> int:
+        """Override for languages with class/interface inheritance to record."""
+        return 0
+
+    @staticmethod
+    def _scip_symbol_to_qname(symbol: str) -> str | None:
+        """Override when scip_binary is set."""
+        return None
+
+    @abstractmethod
+    def _run_treesitter(self, conn, repo_path: str) -> int: ...
 
 
 def get_indexer(language: str) -> BaseIndexer | None:
