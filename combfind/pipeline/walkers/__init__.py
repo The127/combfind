@@ -4,6 +4,7 @@ from combfind.pipeline.walkers.erlang import ErlangWalker
 from combfind.pipeline.walkers.gleam import GleamWalker
 from combfind.pipeline.walkers.go import GoWalker
 from combfind.pipeline.walkers.java import JavaWalker
+from combfind.pipeline.walkers.kotlin import KotlinWalker
 from combfind.pipeline.walkers.python import PythonWalker
 
 
@@ -19,6 +20,7 @@ _REGISTRY: dict[str, Walker] = {
     "java": JavaWalker(),
     "gleam": GleamWalker(),
     "erlang": ErlangWalker(),
+    "kotlin": KotlinWalker(),
 }
 
 
