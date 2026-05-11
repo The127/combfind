@@ -199,7 +199,7 @@ Every concept cluster is tagged with one of seven roles. An agent that finds `To
 
 ## Supported languages
 
-Python, Go, Java, Gleam, Erlang.
+Python, Go, Java, Kotlin, Gleam, Erlang.
 
 ## Optional SCIP tools
 
