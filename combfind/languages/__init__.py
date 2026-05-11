@@ -6,7 +6,9 @@ class LanguageDef:
     extensions: list[str]
     grammar: str  # importable package name, e.g. "tree_sitter_python"; "" if none
     scip_binary: str  # checked via shutil.which at runtime
-    pack_name: str = field(default="")  # name in tree-sitter-language-pack, if no standalone package
+    pack_name: str = field(
+        default=""
+    )  # name in tree-sitter-language-pack, if no standalone package
 
 
 LANGUAGES: dict[str, LanguageDef] = {
@@ -36,5 +38,10 @@ LANGUAGES: dict[str, LanguageDef] = {
         grammar="",
         scip_binary="",
         pack_name="erlang",
+    ),
+    "kotlin": LanguageDef(
+        extensions=[".kt", ".kts"],
+        grammar="tree_sitter_kotlin",
+        scip_binary="scip-kotlin",
     ),
 }
