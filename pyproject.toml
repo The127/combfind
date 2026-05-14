@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "combfind"
-version = "1.5.3"
+version = "1.6.0"
 description = "Queryable concept map of a codebase for LLM coding agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -43,6 +43,7 @@ dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.7"]
 
 [project.scripts]
 combfind = "combfind.cli:cli"
+
 
 [tool.setuptools.packages.find]
 where = ["."]

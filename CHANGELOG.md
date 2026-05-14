@@ -1,6 +1,52 @@
 # CHANGELOG
 
 
+## v1.6.0 (2026-05-14)
+
+### Features
+
+- **kotlin**: Add Kotlin language support
+  ([`c81e254`](https://github.com/The127/combfind/commit/c81e254a60905e596d7c1e9af0a2da97296da0f8))
+
+Parses .kt and .kts files via tree-sitter-kotlin. Extracts top-level functions,
+  classes/interfaces/enum/data/sealed/annotation classes, objects, companion objects, methods,
+  properties, const vals, enum entries, and extension functions; picks up /** KDoc */ block_comment
+  siblings as docstrings.
+
+- LanguageDef adds kotlin entry; scip_binary wired to "scip-kotlin" but no Kotlin SCIP indexer is
+  implemented yet (tree-sitter-only path works the same as Gleam/Erlang) - new KotlinWalker mirrors
+  the JavaWalker recursion pattern - companion objects appear as nested "class" symbols named
+  "Companion" (or the explicit identifier if present) - extension functions are top-level "function"
+  kind; the receiver type goes into the signature, not the qualified_name
+
+### Refactoring
+
+- **indexers**: Hoist scip-or-fallback dispatch into baseindexer
+  ([`5d50185`](https://github.com/The127/combfind/commit/5d50185ff1ba04fe5aa211b7024ed503d94310c5))
+
+each indexer used to reimplement the same control flow (shutil.which, build-descriptor check,
+  warning, tree-sitter fallback). that is exactly where the scip-java fallback bug landed, and where
+  it could land again for a future language.
+
+baseindexer now owns run() (marked @final). subclasses declare language, scip_binary, scip_args,
+  build_files, build_files_label and implement _run_treesitter; _inherit is an overridable hook for
+  languages with inheritance to record.
+
+net -37 lines across the three indexers, the dispatch lives in one place.
+
+### Testing
+
+- **kotlin**: Unit tests + README update
+  ([`210820a`](https://github.com/The127/combfind/commit/210820af0f6b066eaf01f3895b58c235e653fd3f))
+
+17 tests cover class/interface/enum/data/object/companion, methods with and without return types,
+  nested classes, top-level functions, extension functions, const val vs val, enum entries, KDoc
+  extraction, and that import statements aren't surfaced as symbols.
+
+README's Supported languages line gains Kotlin; the optional SCIP tools table is unchanged — no
+  scip-kotlin indexer yet.
+
+
 ## v1.5.3 (2026-05-03)
 
 ### Bug Fixes
